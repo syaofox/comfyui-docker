@@ -38,9 +38,13 @@ RUN git clone https://github.com/Comfy-Org/ComfyUI.git .
 
 RUN python3.12 -m venv /workspace/venv
 
+RUN /workspace/venv/bin/pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
+
 RUN if [ -f requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r requirements.txt; fi
 
 RUN if [ -f manager_requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r manager_requirements.txt; fi
+
+COPY custom_nodes/sfnodes/requirements.txt dest
 
 EXPOSE 8188
 

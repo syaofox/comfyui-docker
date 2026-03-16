@@ -9,6 +9,8 @@ services:
       - "8188:8188"
     volumes:
       - ./input:/workspace/input
+      - ./input/clipspace:/workspace/input/clipspace/
+      - ./input/pasted:/workspace/input/pasted/
       - ./custom_nodes:/workspace/custom_nodes
       - ./models:/workspace/models
       - ./output:/workspace/output
