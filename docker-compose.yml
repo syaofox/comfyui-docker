@@ -1,0 +1,32 @@
+services:
+  comfyui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: comfyui-docker:latest
+    container_name: comfyui-docker
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./input:/workspace/input
+      - ./custom_nodes:/workspace/custom_nodes
+      - ./models:/workspace/models
+      - ./output:/workspace/output
+      - ./user:/workspace/user
+      - ./.cache:/workspace/.cache
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HF_HOME=/workspace/.cache/hf_download
+      - MODELSCOPE_CACHE=/workspace/.cache/modelscope
+      - U2NET_HOME=/workspace/models/u2net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    shm_size: 8g
