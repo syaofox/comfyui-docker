@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: comfyui-docker:latest
-    container_name: comfyui-docker
+    image: comfyui-docker-dev:latest
+    container_name: comfyui-docker-dev
     ports:
       - "8188:8188"
     volumes:
