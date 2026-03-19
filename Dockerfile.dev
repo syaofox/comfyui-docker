@@ -29,6 +29,16 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
+# 安装 FFmpeg (BtbN 预编译版本，带 NVENC 支持)
+RUN wget -q https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl-shared.tar.xz && \
+    tar -xf ffmpeg-master-latest-linux64-gpl-shared.tar.xz && \
+    cp -r ffmpeg-master-latest-linux64-gpl-shared/bin/* /usr/local/bin/ && \
+    cp -r ffmpeg-master-latest-linux64-gpl-shared/lib/* /usr/local/lib/ && \
+    ldconfig && rm -rf ffmpeg-*
+
+# 验证 NVENC 支持
+RUN ffmpeg -hide_banner -encoders 2>/dev/null | grep -q nvenc || (echo "ERROR: NVENC not found in ffmpeg" && exit 1)
+
 RUN mkdir -p /workspace && chown -R ubuntu:ubuntu /workspace
 WORKDIR /workspace
 
@@ -41,7 +51,10 @@ RUN python3.12 -m venv /workspace/venv
 RUN /workspace/venv/bin/pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
 
 COPY wheel/ /workspace/wheel/
+COPY user/__manager/snapshots/ /workspace/user/__manager/snapshots/
+COPY install_snapshot_pips.py /workspace/install_snapshot_pips.py
 RUN /workspace/venv/bin/pip install --no-cache-dir /workspace/wheel/*.whl
+RUN /workspace/venv/bin/python /workspace/install_snapshot_pips.py || true
 
 RUN if [ -f requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r requirements.txt; fi
 
