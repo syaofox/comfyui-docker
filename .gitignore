@@ -1,5 +1,6 @@
 .cache/
 custom_nodes/
+custom_nodes_requirements.txt
 input/
 output/
 user/

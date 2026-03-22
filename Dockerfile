@@ -1,18 +1,16 @@
-FROM nvidia/cuda:13.1.1-cudnn-runtime-ubuntu24.04
+FROM pytorch/pytorch:2.10.0-cuda13.0-cudnn9-runtime
+
+ARG PUID=1000
+ARG PGID=1000
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
-    PYTHON_VERSION=3.12 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    VIRTUAL_ENV=/workspace/venv \
-    PATH="/workspace/venv/bin:$PATH"
+    PIP_ROOT_USER_ACTION=ignore
 
 RUN apt-get update && apt-get install -y \
-    python3.12 \
-    python3-pip \
-    python3.12-dev \
-    python3.12-venv \
+    sudo \
     git \
     wget \
     build-essential \
@@ -22,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     liblapack-dev \
     gfortran \
     libgl1 \
+    libgles2 \
+    libegl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
@@ -39,35 +39,58 @@ RUN wget -q https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpe
 # 验证 NVENC 支持
 RUN ffmpeg -hide_banner -encoders 2>/dev/null | grep -q nvenc || (echo "ERROR: NVENC not found in ffmpeg" && exit 1)
 
-RUN mkdir -p /workspace && chown -R ubuntu:ubuntu /workspace
-WORKDIR /workspace
+# 创建目录结构（root 执行，chown 在 entrypoint 中完成）
+RUN mkdir -p /home/comfy/app
 
-USER ubuntu
+WORKDIR /home/comfy/app
 
-RUN git clone https://github.com/Comfy-Org/ComfyUI.git .
+# 克隆 ComfyUI
+RUN LATEST_TAG=$(git ls-remote --tags --sort=-v:refname https://github.com/Comfy-Org/ComfyUI.git | head -1 | sed 's|.*refs/tags/||;s|\^{}||') && \
+    echo "Cloning ComfyUI tag: $LATEST_TAG" && \
+    git clone --branch "$LATEST_TAG" --depth 1 https://github.com/Comfy-Org/ComfyUI.git .
 
-RUN python3.12 -m venv /workspace/venv
+# 移除 PEP 668 限制，允许系统 pip 安装包
+RUN rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED
 
-RUN /workspace/venv/bin/pip install --upgrade pip setuptools wheel
+# 安装 Python 依赖（root，系统 pip，torch 已在 base image 中，无需重装）
+RUN pip install --upgrade pip setuptools wheel
 
-RUN /workspace/venv/bin/pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
+# 升级 numpy（base image 的 numpy 1.x 不兼容 cupy 和 opencv）
+RUN pip install --no-cache-dir "numpy>=2,<2.6"
 
-COPY wheel/ /workspace/wheel/
-COPY user/__manager/snapshots/ /workspace/user/__manager/snapshots/
-COPY install_snapshot_pips.py /workspace/install_snapshot_pips.py
-RUN /workspace/venv/bin/pip install --no-cache-dir /workspace/wheel/*.whl
-RUN /workspace/venv/bin/python /workspace/install_snapshot_pips.py || true
+RUN pip install --no-cache-dir cupy-cuda13x
 
-RUN if [ -f requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r requirements.txt; fi
+RUN pip install --no-cache-dir onnxruntime-gpu
 
-RUN if [ -f manager_requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r manager_requirements.txt; fi
+COPY wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
 
-RUN /workspace/venv/bin/pip install bitsandbytes --force-reinstall --no-deps -U
+RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
+
+RUN if [ -f requirements.txt ]; then \
+    grep -v -iE "^(torch|torchvision|torchaudio)[=~><!]" requirements.txt > /tmp/filtered_requirements.txt && \
+    pip install --no-cache-dir -r /tmp/filtered_requirements.txt; fi
+
+RUN pip install --no-cache-dir bitsandbytes --force-reinstall --no-deps -U
+
+COPY wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl
+
+RUN pip install --no-cache-dir /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl
+
+RUN pip install --no-cache-dir sageattention
+
+# 配置 sudo 免密（entrypoint 中 sudo 切换用户用）
+RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
+
+COPY entrypoint.sh /entrypoint.sh
 
 EXPOSE 8188
 
-ENV HF_HOME=/workspace/.cache/hf_download
-ENV MODELSCOPE_CACHE=/workspace/.cache/modelscope
-ENV U2NET_HOME=/workspace/models/u2net
+ENV PUID=${PUID}
+ENV PGID=${PGID}
+ENV HF_HOME=/home/comfy/app/.cache/hf_download
+ENV MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
+ENV U2NET_HOME=/home/comfy/app/models/u2net
+ENV COMFYUI_PATH=/home/comfy/app
 
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
 CMD ["python3", "main.py", "--listen"]
