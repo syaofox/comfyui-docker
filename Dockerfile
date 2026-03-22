@@ -48,6 +48,8 @@ RUN git clone https://github.com/Comfy-Org/ComfyUI.git .
 
 RUN python3.12 -m venv /workspace/venv
 
+RUN /workspace/venv/bin/pip install --upgrade pip setuptools wheel
+
 RUN /workspace/venv/bin/pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
 
 COPY wheel/ /workspace/wheel/
@@ -59,6 +61,8 @@ RUN /workspace/venv/bin/python /workspace/install_snapshot_pips.py || true
 RUN if [ -f requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r requirements.txt; fi
 
 RUN if [ -f manager_requirements.txt ]; then /workspace/venv/bin/pip install --no-cache-dir -r manager_requirements.txt; fi
+
+RUN /workspace/venv/bin/pip install bitsandbytes --force-reinstall --no-deps -U
 
 EXPOSE 8188
 
