@@ -69,12 +69,12 @@ COPY wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl /hom
 
 RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
 
+# 生成 constraints 文件，锁定核心包版本（防止传递依赖降级）
+RUN python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]" && cat /tmp/constraints.txt
+
 RUN if [ -f requirements.txt ]; then \
     grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" requirements.txt > /tmp/filtered_requirements.txt && \
-    pip install --no-cache-dir -r /tmp/filtered_requirements.txt; fi
-
-# 兜底：确保 numpy 不被自定义节点降级
-RUN pip install --no-cache-dir "numpy>=2,<2.6"
+    pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt; fi
 
 RUN pip install --no-cache-dir bitsandbytes --force-reinstall --no-deps -U
 

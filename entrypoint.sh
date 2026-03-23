@@ -71,6 +71,9 @@ if [ "$UPDATE_NODES" = "true" ]; then
     done
 fi
 
+# 生成 constraints 文件，锁定核心包版本（防止自定义节点传递依赖降级）
+python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+
 # 安装默认节点的 pip 依赖（root 执行），过滤防止覆盖 base image 版本
 echo "Installing requirements for custom nodes..."
 FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]"
@@ -81,7 +84,7 @@ for entry in "${DEFAULT_NODES[@]}"; do
     if [ -f "$req_file" ]; then
         echo "  -> Installing requirements for: $name"
         grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_requirements.txt \
-            && pip install --no-cache-dir -r /tmp/node_requirements.txt 2>/dev/null || true
+            && pip install --no-cache-dir -r /tmp/node_requirements.txt -c /tmp/constraints.txt 2>/dev/null || true
     fi
 done
 
