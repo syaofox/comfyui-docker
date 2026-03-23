@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    # https://github.com/filliptm/ComfyUI_Fill-Nodes.git
+    libglut3.12 \
+    libglut-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 FFmpeg (BtbN 预编译版本，带 NVENC 支持)
@@ -67,8 +70,11 @@ COPY wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl /hom
 RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
 
 RUN if [ -f requirements.txt ]; then \
-    grep -v -iE "^(torch|torchvision|torchaudio)[=~><!]" requirements.txt > /tmp/filtered_requirements.txt && \
+    grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" requirements.txt > /tmp/filtered_requirements.txt && \
     pip install --no-cache-dir -r /tmp/filtered_requirements.txt; fi
+
+# 兜底：确保 numpy 不被自定义节点降级
+RUN pip install --no-cache-dir "numpy>=2,<2.6"
 
 RUN pip install --no-cache-dir bitsandbytes --force-reinstall --no-deps -U
 
@@ -76,7 +82,7 @@ COPY wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl /home/co
 
 RUN pip install --no-cache-dir /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl
 
-RUN pip install --no-cache-dir sageattention
+RUN pip install --no-cache-dir PyOpenGL-accelerate sageattention
 
 # 配置 sudo 免密（entrypoint 中 sudo 切换用户用）
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all

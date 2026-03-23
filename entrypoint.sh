@@ -25,6 +25,8 @@ DEFAULT_NODES=(
     "https://github.com/rgthree/rgthree-comfy.git|rgthree-comfy"
     "https://github.com/chrisgoringe/cg-use-everywhere.git|cg-use-everywhere"
     "https://github.com/cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
+    "https://github.com/filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
+    "https://github.com/o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
 )
 
 # 创建模型目录
