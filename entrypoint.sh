@@ -8,19 +8,23 @@ PGID="${PGID:-1000}"
 # 默认节点列表（URL|目录名）
 DEFAULT_NODES=(
     "https://github.com/Comfy-Org/ComfyUI-Manager.git|ComfyUI-Manager"
+    # 私有节点列表
     "https://github.com/syaofox/sfnodes.git|sfnodes"
-    "https://github.com/city96/ComfyUI-GGUF.git|ComfyUI-GGUF"
-    "https://github.com/kijai/ComfyUI-KJNodes.git|ComfyUI-KJNodes"
     "https://github.com/syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"
+    "https://github.com/city96/ComfyUI-GGUF.git|ComfyUI-GGUF"
+    "https://github.com/syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
+    # 以下是一些社区流行的节点，用户可根据需要选择性克隆
+    "https://github.com/kijai/ComfyUI-KJNodes.git|ComfyUI-KJNodes"
     "https://github.com/LAOGOU-666/Comfyui-Memory_Cleanup.git|Comfyui-Memory_Cleanup"
     "https://github.com/kijai/ComfyUI-MMAudio.git|ComfyUI-MMAudio"
     "https://github.com/yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
-    "https://github.com/syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     "https://github.com/1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
     "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
     "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git|ComfyUI-VideoHelperSuite"
     "https://github.com/ClownsharkBatwing/RES4LYF.git|RES4LYF"
     "https://github.com/rgthree/rgthree-comfy.git|rgthree-comfy"
+    "https://github.com/chrisgoringe/cg-use-everywhere.git|cg-use-everywhere"
+    "https://github.com/cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
 )
 
 # 创建模型目录
@@ -93,10 +97,10 @@ fi
 groupadd -g "$PGID" comfy 2>/dev/null || true
 useradd -m -u "$PUID" -g comfy -s /bin/bash comfy 2>/dev/null || true
 
-# 修正目录权限（覆盖 app 目录和用户主目录下的 .cache）
+# 修正目录权限（覆盖整个 home 目录，包括 .cache / .triton 等）
 chown -R "$PUID:$PGID" "$APP_DIR"
-mkdir -p /home/comfy/.cache
-chown -R "$PUID:$PGID" /home/comfy/.cache
+mkdir -p /home/comfy/.cache /home/comfy/.triton
+chown -R "$PUID:$PGID" /home/comfy
 
 echo "Starting ComfyUI as user comfy ($PUID:$PGID)..."
 exec sudo -u "#$PUID" --preserve-env=HF_HOME,MODELSCOPE_CACHE,U2NET_HOME,COMFYUI_PATH,NVIDIA_VISIBLE_DEVICES,NVIDIA_DRIVER_CAPABILITIES \
