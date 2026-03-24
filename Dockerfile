@@ -67,7 +67,8 @@ RUN pip install --no-cache-dir onnxruntime-gpu
 
 COPY wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
 
-RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
+RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl && \
+    rm -f /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
 
 # 生成 constraints 文件，锁定核心包版本（防止传递依赖降级）
 RUN python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]" && cat /tmp/constraints.txt
@@ -80,7 +81,8 @@ RUN pip install --no-cache-dir bitsandbytes --force-reinstall --no-deps -U
 
 COPY wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl
 
-RUN pip install --no-cache-dir /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl
+RUN pip install --no-cache-dir /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl && \
+    rm -f /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-linux_x86_64.whl
 
 RUN pip install --no-cache-dir PyOpenGL-accelerate sageattention
 
