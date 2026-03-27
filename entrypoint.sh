@@ -44,6 +44,9 @@ done
 # 确保挂载卷目录存在
 mkdir -p "$APP_DIR/input" "$APP_DIR/output" "$APP_DIR/user" "$APP_DIR/.cache"
 
+# 允许 git 操作宿主机挂载的目录（属主与容器内用户不同）
+git config --global --add safe.directory '*'
+
 # 克隆缺失的默认节点
 echo "Checking default custom nodes..."
 for entry in "${DEFAULT_NODES[@]}"; do
@@ -65,8 +68,9 @@ if [ "$UPDATE_NODES" = "true" ]; then
         node_dir="$APP_DIR/custom_nodes/$name"
         if [ -d "$node_dir/.git" ]; then
             echo "  -> Updating: $name"
-            git -C "$node_dir" pull --ff-only 2>/dev/null \
-                || echo "  -> Skipped $name (dirty or conflict)"
+            git -C "$node_dir" fetch --depth 1 origin \
+                && git -C "$node_dir" reset --hard origin/HEAD \
+                || echo "  -> Skipped $name (update failed)"
         fi
     done
 fi
