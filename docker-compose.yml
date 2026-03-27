@@ -29,7 +29,7 @@ services:
       - HF_HOME=/home/comfy/app/.cache/hf_download
       - MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
       - U2NET_HOME=/home/comfy/app/models/u2net
-      - UPDATE_NODES=${UPDATE_NODES:-true}
+      - UPDATE_NODES=${UPDATE_NODES:-false}
     deploy:
       resources:
         reservations:
