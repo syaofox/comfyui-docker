@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     git \
     wget \
+    curl \
     build-essential \
     cmake \
     pkg-config \
@@ -48,8 +49,10 @@ RUN mkdir -p /home/comfy/app
 WORKDIR /home/comfy/app
 
 # 克隆 ComfyUI
-RUN LATEST_TAG=$(git ls-remote --tags --sort=-v:refname https://github.com/Comfy-Org/ComfyUI.git | head -1 | sed 's|.*refs/tags/||;s|\^{}||') && \
-    echo "Cloning ComfyUI tag: $LATEST_TAG" && \
+# 使用 curl 获取最新的正式 Release 标签名
+RUN LATEST_TAG=$(curl -s https://api.github.com/repos/Comfy-Org/ComfyUI/releases/latest | grep '"tag_name":' | cut -d'"' -f4) && \
+    if [ -z "$LATEST_TAG" ]; then echo "Error: Could not fetch tag"; exit 1; fi && \
+    echo "Cloning Immutable Release: $LATEST_TAG" && \
     git clone --branch "$LATEST_TAG" --depth 1 https://github.com/Comfy-Org/ComfyUI.git .
 
 # 移除 PEP 668 限制，允许系统 pip 安装包
