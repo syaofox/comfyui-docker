@@ -49,11 +49,14 @@ RUN mkdir -p /home/comfy/app
 WORKDIR /home/comfy/app
 
 # 克隆 ComfyUI
-# 使用 curl 获取最新的正式 Release 标签名
-RUN LATEST_TAG=$(curl -s https://api.github.com/repos/Comfy-Org/ComfyUI/releases/latest | grep '"tag_name":' | cut -d'"' -f4) && \
+# 使用 git ls-remote 获取最新正式 Release 标签名（不依赖 GitHub API，无限制流问题）
+RUN LATEST_TAG=$(git ls-remote --tags https://github.com/Comfy-Org/ComfyUI.git \
+        | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -t. -k1,1n -k2,2n -k3,3n \
+        | tail -1) && \
     if [ -z "$LATEST_TAG" ]; then echo "Error: Could not fetch tag"; exit 1; fi && \
-    echo "Cloning Immutable Release: $LATEST_TAG" && \
-    git clone --branch "$LATEST_TAG" --depth 1 https://github.com/Comfy-Org/ComfyUI.git .
+    echo "Cloning Immutable Release: v$LATEST_TAG" && \
+    git clone --branch "v$LATEST_TAG" --depth 1 https://github.com/Comfy-Org/ComfyUI.git .
 
 # 移除 PEP 668 限制，允许系统 pip 安装包
 RUN rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED

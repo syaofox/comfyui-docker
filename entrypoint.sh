@@ -27,6 +27,7 @@ DEFAULT_NODES=(
     "https://github.com/cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
     "https://github.com/filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
     "https://github.com/o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
+    "https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git|ComfyUI_UltimateSDUpscale"
 )
 
 # 创建模型目录
@@ -47,22 +48,56 @@ mkdir -p "$APP_DIR/input" "$APP_DIR/output" "$APP_DIR/user" "$APP_DIR/.cache"
 # 允许 git 操作宿主机挂载的目录（属主与容器内用户不同）
 git config --global --add safe.directory '*'
 
-# 克隆缺失的默认节点
-echo "Checking default custom nodes..."
-for entry in "${DEFAULT_NODES[@]}"; do
-    url="${entry%%|*}"
-    name="${entry##*|}"
-    node_dir="$APP_DIR/custom_nodes/$name"
-    if [ ! -d "$node_dir" ]; then
-        echo "  -> Cloning: $name"
-        git clone --depth 1 "$url" "$node_dir" \
-            || echo "  -> Failed to clone $name, skipping"
-    fi
-done
+# 升级管理（在宿主机上创建 ./custom_nodes/.update 触发）
+UPDATE_FLAG="$APP_DIR/custom_nodes/.update"
+if [ -f "$UPDATE_FLAG" ]; then
+    echo "Update flag found, starting upgrade..."
 
-# 按需更新默认节点（设置 UPDATE_NODES=true 启用）
-if [ "$UPDATE_NODES" = "true" ]; then
-    echo "Updating custom nodes..."
+    # 1. 升级 ComfyUI 到最新正式 Release
+    echo "=== Updating ComfyUI ==="
+    LATEST_TAG=$(git ls-remote --tags origin \
+        | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -t. -k1,1n -k2,2n -k3,3n \
+        | tail -1)
+    LATEST_TAG="v${LATEST_TAG}"
+    if [ -n "$LATEST_TAG" ] && [ "$LATEST_TAG" != "v" ]; then
+        CURRENT_TAG=$(git -C "$APP_DIR" describe --tags 2>/dev/null || echo "unknown")
+        if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
+            echo "  -> Upgrading ComfyUI: $CURRENT_TAG -> $LATEST_TAG"
+            git -C "$APP_DIR" fetch --depth 1 origin "tag" "$LATEST_TAG" \
+                && git -C "$APP_DIR" reset --hard "FETCH_HEAD" \
+                && echo "  -> ComfyUI upgraded to $LATEST_TAG" \
+                || echo "  -> ComfyUI upgrade failed, keeping current version"
+            # 重新安装 ComfyUI 的依赖
+            if [ -f "$APP_DIR/requirements.txt" ]; then
+                echo "  -> Reinstalling ComfyUI requirements..."
+                python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+                grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
+                    && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
+                    || echo "  -> ComfyUI requirements install failed"
+            fi
+        else
+            echo "  -> ComfyUI already at latest ($CURRENT_TAG), skipping"
+        fi
+    else
+        echo "  -> Could not determine latest release tag, skipping ComfyUI update"
+    fi
+
+    # 2. 克隆缺失的默认节点
+    echo "=== Cloning missing custom nodes ==="
+    for entry in "${DEFAULT_NODES[@]}"; do
+        url="${entry%%|*}"
+        name="${entry##*|}"
+        node_dir="$APP_DIR/custom_nodes/$name"
+        if [ ! -d "$node_dir" ]; then
+            echo "  -> Cloning: $name"
+            git clone --depth 1 "$url" "$node_dir" \
+                || echo "  -> Failed to clone $name, skipping"
+        fi
+    done
+
+    # 3. 更新已有的默认节点
+    echo "=== Updating existing custom nodes ==="
     for entry in "${DEFAULT_NODES[@]}"; do
         name="${entry##*|}"
         node_dir="$APP_DIR/custom_nodes/$name"
@@ -73,24 +108,27 @@ if [ "$UPDATE_NODES" = "true" ]; then
                 || echo "  -> Skipped $name (update failed)"
         fi
     done
+
+    # 4. 安装节点的 pip 依赖
+    echo "=== Installing custom node requirements ==="
+    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]"
+    for entry in "${DEFAULT_NODES[@]}"; do
+        name="${entry##*|}"
+        node_dir="$APP_DIR/custom_nodes/$name"
+        req_file="$node_dir/requirements.txt"
+        if [ -f "$req_file" ]; then
+            echo "  -> Installing requirements for: $name"
+            grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_requirements.txt \
+                && pip install --no-cache-dir -r /tmp/node_requirements.txt -c /tmp/constraints.txt 2>/dev/null || true
+        fi
+    done
+
+    rm -f "$UPDATE_FLAG"
+    echo "=== Upgrade complete, flag removed ==="
+else
+    echo "No update flag found, skipping upgrade."
 fi
-
-# 生成 constraints 文件，锁定核心包版本（防止自定义节点传递依赖降级）
-python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
-
-# 安装默认节点的 pip 依赖（root 执行），过滤防止覆盖 base image 版本
-echo "Installing requirements for custom nodes..."
-FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]"
-for entry in "${DEFAULT_NODES[@]}"; do
-    name="${entry##*|}"
-    node_dir="$APP_DIR/custom_nodes/$name"
-    req_file="$node_dir/requirements.txt"
-    if [ -f "$req_file" ]; then
-        echo "  -> Installing requirements for: $name"
-        grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_requirements.txt \
-            && pip install --no-cache-dir -r /tmp/node_requirements.txt -c /tmp/constraints.txt 2>/dev/null || true
-    fi
-done
 
 # 创建与宿主 UID:GID 一致的用户
 echo "Setting up user (UID=$PUID, GID=$PGID)..."
