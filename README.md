@@ -8,7 +8,7 @@
 - NVIDIA GPU 加速（PyTorch / cuPy / ONNX Runtime GPU / llama.cpp）
 - FFmpeg 预编译版，含 NVENC 硬件编码支持
 - 自定义节点 volume 挂载，依赖自动安装
-- 启动时可选自动更新自定义节点
+- 触发文件机制控制升级（ComfyUI 本体 + 自定义节点 + 依赖），无需重建容器
 - 数据持久化（模型、输入输出、工作流、缓存）
 - 提供中国大陆镜像加速版（`Dockerfile.cn`）
 
@@ -77,7 +77,6 @@ docker compose -f docker-compose.cn.yml build \
 |------|------|--------|
 | `PUID` | 运行用户 UID | `1000` |
 | `PGID` | 运行用户 GID | `1000` |
-| `UPDATE_NODES` | 启动时自动 `git pull` 更新自定义节点 | `false` |
 
 ### 构建参数（仅 `Dockerfile.cn`）
 
@@ -87,7 +86,26 @@ docker compose -f docker-compose.cn.yml build \
 | `APT_MIRROR` | apt 包镜像地址 | `mirrors.aliyun.com` |
 | `PIP_MIRROR` | PyPI 镜像地址 | `pypi.tuna.tsinghua.edu.cn/simple` |
 
-## 自定义节点管理
+## 升级管理
+
+通过触发文件控制 ComfyUI 本体和自定义节点的升级，无需重建容器。
+
+### 触发升级
+
+```bash
+touch ./custom_nodes/.update
+docker restart comfyui-docker
+```
+
+触发后自动依次执行：
+
+1. 升级 ComfyUI 到最新正式 Release（`git ls-remote` 获取最新 tag）
+2. 克隆 `DEFAULT_NODES` 中缺失的节点
+3. 更新已有节点到最新版本
+4. 安装节点的 `requirements.txt` 依赖
+5. 删除 `.update` 文件，下次启动不再重复执行
+
+### 默认节点
 
 默认节点定义在 `entrypoint.sh`（或 `entrypoint.cn.sh`）的 `DEFAULT_NODES` 数组中，格式为 `URL|目录名`。
 
@@ -102,32 +120,16 @@ DEFAULT_NODES=(
 )
 ```
 
-重建镜像后启动，会自动克隆并安装依赖：
+然后触发升级：
 
 ```bash
-docker compose build && docker compose up -d
+touch ./custom_nodes/.update
+docker restart comfyui-docker
 ```
 
-启动时会自动安装节点的 `requirements.txt` 依赖，同时过滤以下包以避免覆盖镜像自带版本：
+节点的 `requirements.txt` 依赖会自动安装，同时过滤以下包以避免覆盖镜像自带版本：
 
 `torch` `torchvision` `torchaudio` `cupy-cuda*` `onnxruntime-gpu` `llama_cpp_python`
-
-### 更新节点
-
-```bash
-# 方式一：环境变量
-UPDATE_NODES=true docker compose up -d
-
-# 方式二：在 .env 中设置
-echo "UPDATE_NODES=true" >> .env
-docker compose up -d
-
-# 方式三：手动进入容器
-docker exec -it comfyui-docker bash
-cd /home/comfy/app/custom_nodes/节点名 && git pull
-```
-
-自动更新使用 `git pull --ff-only`，有本地修改或冲突时会跳过，不会破坏数据。
 
 ## 镜像内预装 GPU 包
 
