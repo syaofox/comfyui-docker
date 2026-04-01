@@ -6,6 +6,9 @@ services:
       args:
         PUID: "${PUID:-1000}"
         PGID: "${PGID:-1000}"
+        GH_PROXY: "${GH_PROXY:-}"
+        APT_MIRROR: "${APT_MIRROR:-}"
+        PIP_MIRROR: "${PIP_MIRROR:-}"
     image: comfyui-docker:latest
     container_name: comfyui-docker
     ports:
@@ -13,8 +16,6 @@ services:
     volumes:
       - ./entrypoint.sh:/entrypoint.sh:ro
       - ./input:/home/comfy/app/input
-      # - ./input/clipspace:/home/comfy/app/input/clipspace/
-      # - ./input/pasted:/home/comfy/app/input/pasted/
       - ./custom_nodes:/home/comfy/app/custom_nodes
       - ./models:/home/comfy/app/models
       - ./output:/home/comfy/app/output
@@ -29,7 +30,7 @@ services:
       - HF_HOME=/home/comfy/app/.cache/hf_download
       - MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
       - U2NET_HOME=/home/comfy/app/models/u2net
-      - UPDATE_NODES=${UPDATE_NODES:-false}
+      - GH_PROXY=${GH_PROXY:-}
     deploy:
       resources:
         reservations:

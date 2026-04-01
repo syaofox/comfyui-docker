@@ -2,12 +2,26 @@ FROM pytorch/pytorch:2.10.0-cuda13.0-cudnn9-runtime
 
 ARG PUID=1000
 ARG PGID=1000
+ARG GH_PROXY=
+ARG APT_MIRROR=
+ARG PIP_MIRROR=
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_ROOT_USER_ACTION=ignore
+
+# 可选：替换 apt 源为国内镜像
+RUN if [ -n "$APT_MIRROR" ]; then \
+    sed -i "s|http://archive.ubuntu.com|${APT_MIRROR}|g" /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true && \
+    sed -i "s|http://security.ubuntu.com|${APT_MIRROR}|g" /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true && \
+    sed -i "s|http://archive.ubuntu.com|${APT_MIRROR}|g" /etc/apt/sources.list 2>/dev/null || true && \
+    sed -i "s|http://security.ubuntu.com|${APT_MIRROR}|g" /etc/apt/sources.list 2>/dev/null || true; \
+fi
+
+# 可选：设置 pip 镜像源
+ENV PIP_INDEX_URL=${PIP_MIRROR}
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -28,13 +42,12 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    # https://github.com/filliptm/ComfyUI_Fill-Nodes.git
     libglut3.12 \
     libglut-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 FFmpeg (BtbN 预编译版本，带 NVENC 支持)
-RUN wget -q https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl-shared.tar.xz && \
+RUN wget -q ${GH_PROXY:+${GH_PROXY}/}https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl-shared.tar.xz && \
     tar -xf ffmpeg-master-latest-linux64-gpl-shared.tar.xz && \
     cp -r ffmpeg-master-latest-linux64-gpl-shared/bin/* /usr/local/bin/ && \
     cp -r ffmpeg-master-latest-linux64-gpl-shared/lib/* /usr/local/lib/ && \
@@ -50,13 +63,14 @@ WORKDIR /home/comfy/app
 
 # 克隆 ComfyUI
 # 使用 git ls-remote 获取最新正式 Release 标签名（不依赖 GitHub API，无限制流问题）
-RUN LATEST_TAG=$(git ls-remote --tags https://github.com/Comfy-Org/ComfyUI.git \
+RUN git ls-remote --tags ${GH_PROXY:+${GH_PROXY}/}https://github.com/Comfy-Org/ComfyUI.git \
         | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
         | sort -t. -k1,1n -k2,2n -k3,3n \
-        | tail -1) && \
+        | tail -1 > /tmp/latest_tag && \
+    LATEST_TAG=$(cat /tmp/latest_tag) && \
     if [ -z "$LATEST_TAG" ]; then echo "Error: Could not fetch tag"; exit 1; fi && \
     echo "Cloning Immutable Release: v$LATEST_TAG" && \
-    git clone --branch "v$LATEST_TAG" --depth 1 https://github.com/Comfy-Org/ComfyUI.git .
+    git clone --branch "v$LATEST_TAG" --depth 1 ${GH_PROXY:+${GH_PROXY}/}https://github.com/Comfy-Org/ComfyUI.git .
 
 # 移除 PEP 668 限制，允许系统 pip 安装包
 RUN rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED
@@ -101,6 +115,7 @@ EXPOSE 8188
 
 ENV PUID=${PUID}
 ENV PGID=${PGID}
+ENV GH_PROXY=${GH_PROXY}
 ENV HF_HOME=/home/comfy/app/.cache/hf_download
 ENV MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
 ENV U2NET_HOME=/home/comfy/app/models/u2net

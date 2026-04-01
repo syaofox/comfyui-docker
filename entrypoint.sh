@@ -4,30 +4,34 @@ set -e
 APP_DIR="/home/comfy/app"
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
+GH_PROXY="${GH_PROXY:-}"
+
+# GitHub URL 前缀（为空则直连，非空则走代理）
+GH="${GH_PROXY:+${GH_PROXY}/}https://github.com/"
 
 # 默认节点列表（URL|目录名）
 DEFAULT_NODES=(
-    "https://github.com/Comfy-Org/ComfyUI-Manager.git|ComfyUI-Manager"
+    "Comfy-Org/ComfyUI-Manager.git|ComfyUI-Manager"
     # 私有节点列表
-    "https://github.com/syaofox/sfnodes.git|sfnodes"
-    "https://github.com/syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"
-    "https://github.com/city96/ComfyUI-GGUF.git|ComfyUI-GGUF"
-    "https://github.com/syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
+    "syaofox/sfnodes.git|sfnodes"
+    "syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"
+    "city96/ComfyUI-GGUF.git|ComfyUI-GGUF"
+    "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
-    "https://github.com/kijai/ComfyUI-KJNodes.git|ComfyUI-KJNodes"
-    "https://github.com/LAOGOU-666/Comfyui-Memory_Cleanup.git|Comfyui-Memory_Cleanup"
-    "https://github.com/kijai/ComfyUI-MMAudio.git|ComfyUI-MMAudio"
-    "https://github.com/yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
-    "https://github.com/1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
-    "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
-    "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git|ComfyUI-VideoHelperSuite"
-    "https://github.com/ClownsharkBatwing/RES4LYF.git|RES4LYF"
-    "https://github.com/rgthree/rgthree-comfy.git|rgthree-comfy"
-    "https://github.com/chrisgoringe/cg-use-everywhere.git|cg-use-everywhere"
-    "https://github.com/cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
-    "https://github.com/filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
-    "https://github.com/o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
-    "https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git|ComfyUI_UltimateSDUpscale"
+    "kijai/ComfyUI-KJNodes.git|ComfyUI-KJNodes"
+    "LAOGOU-666/Comfyui-Memory_Cleanup.git|Comfyui-Memory_Cleanup"
+    "kijai/ComfyUI-MMAudio.git|ComfyUI-MMAudio"
+    "yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
+    "1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
+    "numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
+    "Kosinkadink/ComfyUI-VideoHelperSuite.git|ComfyUI-VideoHelperSuite"
+    "ClownsharkBatwing/RES4LYF.git|RES4LYF"
+    "rgthree/rgthree-comfy.git|rgthree-comfy"
+    "chrisgoringe/cg-use-everywhere.git|cg-use-everywhere"
+    "cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
+    "filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
+    "o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
+    "ssitu/ComfyUI_UltimateSDUpscale.git|ComfyUI_UltimateSDUpscale"
 )
 
 # 创建模型目录
@@ -86,12 +90,12 @@ if [ -f "$UPDATE_FLAG" ]; then
     # 2. 克隆缺失的默认节点
     echo "=== Cloning missing custom nodes ==="
     for entry in "${DEFAULT_NODES[@]}"; do
-        url="${entry%%|*}"
+        repo="${entry%%|*}"
         name="${entry##*|}"
         node_dir="$APP_DIR/custom_nodes/$name"
         if [ ! -d "$node_dir" ]; then
             echo "  -> Cloning: $name"
-            git clone --depth 1 "$url" "$node_dir" \
+            git clone --depth 1 "${GH}${repo}" "$node_dir" \
                 || echo "  -> Failed to clone $name, skipping"
         fi
     done
@@ -99,10 +103,13 @@ if [ -f "$UPDATE_FLAG" ]; then
     # 3. 更新已有的默认节点
     echo "=== Updating existing custom nodes ==="
     for entry in "${DEFAULT_NODES[@]}"; do
+        repo="${entry%%|*}"
         name="${entry##*|}"
         node_dir="$APP_DIR/custom_nodes/$name"
         if [ -d "$node_dir/.git" ]; then
             echo "  -> Updating: $name"
+            # 更新 remote URL（应对 GH_PROXY 变化）
+            git -C "$node_dir" remote set-url origin "${GH}${repo}" 2>/dev/null || true
             git -C "$node_dir" fetch --depth 1 origin \
                 && git -C "$node_dir" reset --hard origin/HEAD \
                 || echo "  -> Skipped $name (update failed)"
@@ -150,5 +157,5 @@ mkdir -p /home/comfy/.cache /home/comfy/.triton
 chown -R "$PUID:$PGID" /home/comfy
 
 echo "Starting ComfyUI as user comfy ($PUID:$PGID)..."
-exec sudo -u "#$PUID" --preserve-env=HF_HOME,MODELSCOPE_CACHE,U2NET_HOME,COMFYUI_PATH,NVIDIA_VISIBLE_DEVICES,NVIDIA_DRIVER_CAPABILITIES \
+exec sudo -u "#$PUID" --preserve-env=HF_HOME,MODELSCOPE_CACHE,U2NET_HOME,COMFYUI_PATH,GH_PROXY,NVIDIA_VISIBLE_DEVICES,NVIDIA_DRIVER_CAPABILITIES \
     -- bash -c "cd $APP_DIR && python3 main.py --listen"

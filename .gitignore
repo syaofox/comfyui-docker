@@ -6,3 +6,4 @@ output/
 user/
 models/
 wheel/
+.env

@@ -5,12 +5,12 @@
 ## 功能特性
 
 - 基于 `pytorch/pytorch:2.10.0-cuda13.0-cudnn9-runtime` 官方镜像
-- NVIDIA GPU 加速（PyTorch / cuPy / ONNX Runtime GPU / llama.cpp）
+- NVIDIA GPU 加速（PyTorch / cuPy / ONNX Runtime GPU / llama.cpp / Flash Attention / SageAttention）
 - FFmpeg 预编译版，含 NVENC 硬件编码支持
 - 自定义节点 volume 挂载，依赖自动安装
 - 触发文件机制控制升级（ComfyUI 本体 + 自定义节点 + 依赖），无需重建容器
+- 可选国内镜像加速（apt / pip / GitHub 代理）
 - 数据持久化（模型、输入输出、工作流、缓存）
-- 提供中国大陆镜像加速版（`Dockerfile.cn`）
 
 ## 前置要求
 
@@ -33,36 +33,28 @@ docker compose logs -f
 
 访问 http://localhost:8188
 
-### 中国大陆镜像版
+### 中国大陆镜像加速
+
+项目提供 `.env.example` 范例文件，复制并修改即可：
 
 ```bash
-# 使用国内镜像构建（apt 阿里云 + pip 清华源 + GitHub ghfast.top）
-docker compose -f docker-compose.cn.yml build
+cp .env.example .env
+# 编辑 .env，取消注释并填写国内镜像地址
+vim .env
 
-# 启动
-docker compose -f docker-compose.cn.yml up -d
-```
-
-构建时可通过 `--build-arg` 覆盖镜像地址：
-
-```bash
-docker compose -f docker-compose.cn.yml build \
-  --build-arg GH_PROXY=https://your-gh-proxy.com \
-  --build-arg APT_MIRROR=mirrors.tuna.tsinghua.edu.cn \
-  --build-arg PIP_MIRROR=mirrors.cloud.aliyuncs.com/pypi/simple
+docker compose build
+docker compose up -d
 ```
 
 ## 目录结构
 
 ```
 .
-├── Dockerfile              # 镜像构建文件（国际源）
-├── Dockerfile.cn           # 镜像构建文件（国内镜像加速）
+├── Dockerfile              # 镜像构建文件
 ├── docker-compose.yml      # 容器编排配置
-├── docker-compose.cn.yml   # 容器编排配置（国内镜像版）
 ├── entrypoint.sh           # 启动脚本
-├── entrypoint.cn.sh        # 启动脚本（国内镜像版）
-├── wheel/                  # 预编译 wheel（llama_cpp_python）
+├── .env.example            # 环境变量范例
+├── wheel/                  # 预编译 wheel（llama_cpp_python / flash_attn）
 ├── custom_nodes/           # 自定义节点（volume 挂载）
 ├── models/                 # 模型文件（volume 挂载）
 ├── input/                  # 输入文件
@@ -77,14 +69,15 @@ docker compose -f docker-compose.cn.yml build \
 |------|------|--------|
 | `PUID` | 运行用户 UID | `1000` |
 | `PGID` | 运行用户 GID | `1000` |
+| `GH_PROXY` | GitHub 加速代理前缀（构建时 + 运行时） | 空（直连） |
+| `APT_MIRROR` | apt 包镜像地址（构建时） | 空（官方源） |
+| `PIP_MIRROR` | PyPI 镜像地址（构建时） | 空（官方源） |
+| `COMFYUI_PATH` | ComfyUI 安装目录 | `/home/comfy/app` |
+| `HF_HOME` | HuggingFace 缓存目录 | `/home/comfy/app/.cache/hf_download` |
+| `MODELSCOPE_CACHE` | ModelScope 缓存目录 | `/home/comfy/app/.cache/modelscope` |
+| `U2NET_HOME` | U2Net 模型目录 | `/home/comfy/app/models/u2net` |
 
-### 构建参数（仅 `Dockerfile.cn`）
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `GH_PROXY` | GitHub 加速代理前缀 | `https://ghfast.top` |
-| `APT_MIRROR` | apt 包镜像地址 | `mirrors.aliyun.com` |
-| `PIP_MIRROR` | PyPI 镜像地址 | `pypi.tuna.tsinghua.edu.cn/simple` |
+> **注意**: `docker-compose.yml` 中设置了 `shm_size: 8g`，确保容器内有足够共享内存。
 
 ## 升级管理
 
@@ -107,7 +100,7 @@ docker restart comfyui-docker
 
 ### 默认节点
 
-默认节点定义在 `entrypoint.sh`（或 `entrypoint.cn.sh`）的 `DEFAULT_NODES` 数组中，格式为 `URL|目录名`。
+默认节点定义在 `entrypoint.sh` 的 `DEFAULT_NODES` 数组中。
 
 ### 添加节点
 
@@ -116,7 +109,7 @@ docker restart comfyui-docker
 ```bash
 DEFAULT_NODES=(
     ...
-    "https://github.com/<作者>/<节点仓库>.git|<目录名>"
+    "<作者>/<节点仓库>.git|<目录名>"
 )
 ```
 
@@ -140,7 +133,10 @@ docker restart comfyui-docker
 | `cupy-cuda13x` | CUDA 加速数组运算 |
 | `onnxruntime-gpu` | GPU 版 ONNX 推理 |
 | `llama_cpp_python` | 本地 LLM 推理（预编译 wheel） |
+| `flash_attn` | Flash Attention 加速（预编译 wheel） |
 | `bitsandbytes` | 量化推理 |
+| `sageattention` | SageAttention 加速 |
+| `PyOpenGL-accelerate` | OpenGL 加速 |
 
 ## 常用命令
 
