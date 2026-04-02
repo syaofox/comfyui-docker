@@ -32,6 +32,7 @@ DEFAULT_NODES=(
     "filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
     "o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
     "ssitu/ComfyUI_UltimateSDUpscale.git|ComfyUI_UltimateSDUpscale"
+    "jtydhr88/ComfyUI-qwenmultiangle.git|ComfyUI-qwenmultiangle"
 )
 
 # 创建模型目录
