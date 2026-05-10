@@ -33,6 +33,7 @@ DEFAULT_NODES=(
     "o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
     "ssitu/ComfyUI_UltimateSDUpscale.git|ComfyUI_UltimateSDUpscale"
     "jtydhr88/ComfyUI-qwenmultiangle.git|ComfyUI-qwenmultiangle"
+    "judian17/ComfyUI-PixelSmile-Conditioning-Interpolation.git|ComfyUI-PixelSmile-Conditioning-Interpolation"
 )
 
 # 创建模型目录
