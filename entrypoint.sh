@@ -15,7 +15,7 @@ DEFAULT_NODES=(
     # 私有节点列表
     "syaofox/sfnodes.git|sfnodes"
     "syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"    
-    "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
+    # "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
     "city96/ComfyUI-GGUF.git|ComfyUI-GGUF"
     "kijai/ComfyUI-KJNodes.git|ComfyUI-KJNodes"
@@ -118,26 +118,27 @@ if [ -f "$UPDATE_FLAG" ]; then
         fi
     done
 
-    # 4. 安装节点的 pip 依赖
-    echo "=== Installing custom node requirements ==="
-    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
-    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]"
-    for entry in "${DEFAULT_NODES[@]}"; do
-        name="${entry##*|}"
-        node_dir="$APP_DIR/custom_nodes/$name"
-        req_file="$node_dir/requirements.txt"
-        if [ -f "$req_file" ]; then
-            echo "  -> Installing requirements for: $name"
-            grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_requirements.txt \
-                && pip install --no-cache-dir -r /tmp/node_requirements.txt -c /tmp/constraints.txt 2>/dev/null || true
-        fi
-    done
-
     rm -f "$UPDATE_FLAG"
     echo "=== Upgrade complete, flag removed ==="
-else
-    echo "No update flag found, skipping upgrade."
 fi
+
+# 安装节点的 pip 依赖（每次启动都执行，确保新增依赖被安装）
+echo "=== Installing custom node requirements ==="
+python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]"
+for entry in "${DEFAULT_NODES[@]}"; do
+    name="${entry##*|}"
+    node_dir="$APP_DIR/custom_nodes/$name"
+    req_file="$node_dir/requirements.txt"
+    if [ -f "$req_file" ]; then
+        echo "  -> Installing requirements for: $name"
+        filtered_req=$(grep -v -iE "$FILTER_PATTERN" "$req_file" || true)
+        if [ -n "$filtered_req" ]; then
+            echo "$filtered_req" > /tmp/node_requirements.txt
+            pip install --no-cache-dir -r /tmp/node_requirements.txt -c /tmp/constraints.txt || true
+        fi
+    fi
+done
 
 # 创建与宿主 UID:GID 一致的用户
 echo "Setting up user (UID=$PUID, GID=$PGID)..."
