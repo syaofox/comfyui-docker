@@ -76,6 +76,7 @@ docker compose up -d
 | `HF_HOME` | HuggingFace 缓存目录 | `/home/comfy/app/.cache/hf_download` |
 | `MODELSCOPE_CACHE` | ModelScope 缓存目录 | `/home/comfy/app/.cache/modelscope` |
 | `U2NET_HOME` | U2Net 模型目录 | `/home/comfy/app/models/u2net` |
+| `COMFYUI_UPDATE_MODE` | ComfyUI 升级模式：`tag`（最新 Release）或 `latest`（最新提交） | `tag` |
 
 > **注意**: `docker-compose.yml` 中设置了 `shm_size: 8g`，确保容器内有足够共享内存。
 
@@ -92,11 +93,13 @@ docker restart comfyui-docker
 
 触发后自动依次执行：
 
-1. 升级 ComfyUI 到最新正式 Release（`git ls-remote` 获取最新 tag）
+1. 升级 ComfyUI — 默认走 tag 模式（`git ls-remote` 获取最新 Release tag）；设置 `COMFYUI_UPDATE_MODE=latest` 则直接拉取默认分支最新提交
 2. 克隆 `DEFAULT_NODES` 中缺失的节点
 3. 更新已有节点到最新版本
 4. 安装节点的 `requirements.txt` 依赖
 5. 删除 `.update` 文件，下次启动不再重复执行
+
+> **数据库自动恢复**: 切换 `COMFYUI_UPDATE_MODE` 或上游 rebase migration 后，可能导致旧 `comfyui.db` 的 migration 记录与当前代码不兼容。entrypoint 会在启动前自动检测，发现不兼容时将旧 DB 备份为 `comfyui.db.migration_error.<时间戳>` 并重建，工作流等数据不保留但不会阻塞启动。
 
 ### 默认节点
 

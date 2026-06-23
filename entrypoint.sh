@@ -5,6 +5,7 @@ APP_DIR="/home/comfy/app"
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 GH_PROXY="${GH_PROXY:-}"
+COMFYUI_UPDATE_MODE="${COMFYUI_UPDATE_MODE:-tag}"
 
 # GitHub URL 前缀（为空则直连，非空则走代理）
 GH="${GH_PROXY:+${GH_PROXY}/}https://github.com/"
@@ -61,34 +62,61 @@ UPDATE_FLAG="$APP_DIR/custom_nodes/.update"
 if [ -f "$UPDATE_FLAG" ]; then
     echo "Update flag found, starting upgrade..."
 
-    # 1. 升级 ComfyUI 到最新正式 Release
+    # 1. 升级 ComfyUI
     echo "=== Updating ComfyUI ==="
-    LATEST_TAG=$(git ls-remote --tags origin \
-        | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
-        | sort -t. -k1,1n -k2,2n -k3,3n \
-        | tail -1)
-    LATEST_TAG="v${LATEST_TAG}"
-    if [ -n "$LATEST_TAG" ] && [ "$LATEST_TAG" != "v" ]; then
-        CURRENT_TAG=$(git -C "$APP_DIR" describe --tags 2>/dev/null || echo "unknown")
-        if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
-            echo "  -> Upgrading ComfyUI: $CURRENT_TAG -> $LATEST_TAG"
-            git -C "$APP_DIR" fetch --depth 1 origin "tag" "$LATEST_TAG" \
-                && git -C "$APP_DIR" reset --hard "FETCH_HEAD" \
-                && echo "  -> ComfyUI upgraded to $LATEST_TAG" \
-                || echo "  -> ComfyUI upgrade failed, keeping current version"
-            # 重新安装 ComfyUI 的依赖
-            if [ -f "$APP_DIR/requirements.txt" ]; then
-                echo "  -> Reinstalling ComfyUI requirements..."
-                python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
-                grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
-                    && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
-                    || echo "  -> ComfyUI requirements install failed"
+    if [ "$COMFYUI_UPDATE_MODE" = "latest" ]; then
+        echo "  -> Mode: latest (tracking default branch)"
+        CURRENT_SHA=$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo "unknown")
+        if git -C "$APP_DIR" fetch --depth 1 origin 2>/dev/null; then
+            LATEST_SHA=$(git -C "$APP_DIR" rev-parse FETCH_HEAD 2>/dev/null || echo "unknown")
+            if [ "$CURRENT_SHA" != "$LATEST_SHA" ]; then
+                echo "  -> Upgrading ComfyUI: ${CURRENT_SHA:0:8} -> ${LATEST_SHA:0:8}"
+                git -C "$APP_DIR" reset --hard FETCH_HEAD \
+                    && echo "  -> ComfyUI upgraded to latest commit" \
+                    || echo "  -> ComfyUI upgrade failed, keeping current version"
+                # 重新安装 ComfyUI 的依赖
+                if [ -f "$APP_DIR/requirements.txt" ]; then
+                    echo "  -> Reinstalling ComfyUI requirements..."
+                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+                    grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
+                        && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
+                        || echo "  -> ComfyUI requirements install failed"
+                fi
+            else
+                echo "  -> ComfyUI already at latest ($CURRENT_SHA), skipping"
             fi
         else
-            echo "  -> ComfyUI already at latest ($CURRENT_TAG), skipping"
+            echo "  -> Fetch failed, skipping ComfyUI update"
         fi
     else
-        echo "  -> Could not determine latest release tag, skipping ComfyUI update"
+        echo "  -> Mode: tag (tracking latest release tag)"
+        LATEST_TAG=$(git ls-remote --tags origin \
+            | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -t. -k1,1n -k2,2n -k3,3n \
+            | tail -1)
+        LATEST_TAG="v${LATEST_TAG}"
+        if [ -n "$LATEST_TAG" ] && [ "$LATEST_TAG" != "v" ]; then
+            CURRENT_TAG=$(git -C "$APP_DIR" describe --tags 2>/dev/null || echo "unknown")
+            if [ "$CURRENT_TAG" != "$LATEST_TAG" ]; then
+                echo "  -> Upgrading ComfyUI: $CURRENT_TAG -> $LATEST_TAG"
+                git -C "$APP_DIR" fetch --depth 1 origin "tag" "$LATEST_TAG" \
+                    && git -C "$APP_DIR" reset --hard "FETCH_HEAD" \
+                    && echo "  -> ComfyUI upgraded to $LATEST_TAG" \
+                    || echo "  -> ComfyUI upgrade failed, keeping current version"
+                # 重新安装 ComfyUI 的依赖
+                if [ -f "$APP_DIR/requirements.txt" ]; then
+                    echo "  -> Reinstalling ComfyUI requirements..."
+                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+                    grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
+                        && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
+                        || echo "  -> ComfyUI requirements install failed"
+                fi
+            else
+                echo "  -> ComfyUI already at latest ($CURRENT_TAG), skipping"
+            fi
+        else
+            echo "  -> Could not determine latest release tag, skipping ComfyUI update"
+        fi
     fi
 
     # 2. 克隆缺失的默认节点
@@ -160,6 +188,43 @@ useradd -m -u "$PUID" -g comfy -s /bin/bash comfy 2>/dev/null || true
 chown -R "$PUID:$PGID" "$APP_DIR"
 mkdir -p /home/comfy/.cache /home/comfy/.triton
 chown -R "$PUID:$PGID" /home/comfy
+
+# 检测 ComfyUI 的 database migration 是否与当前代码一致
+# 不一致时（如切换分支/tag 导致 migration 链变化），自动备份旧库并重建
+python3 << 'EOF' 2>/dev/null || true
+import os, sqlite3, glob, shutil
+
+db = os.path.join(os.environ['COMFYUI_PATH'], 'user', 'comfyui.db')
+if not os.path.isfile(db):
+    exit(0)
+try:
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute("SELECT version_num FROM alembic_version")
+    row = cur.fetchone()
+    conn.close()
+except Exception:
+    exit(0)
+if not row:
+    exit(0)
+rev = row[0]
+versions_dir = os.path.join(os.environ['COMFYUI_PATH'], 'alembic_db', 'versions')
+found = any(
+    f"revision = '{rev}'" in open(f).read() or f'revision = "{rev}"' in open(f).read()
+    for f in glob.glob(os.path.join(versions_dir, '*.py'))
+)
+if found:
+    exit(0)
+backup = db + f'.migration_error.{int(os.path.getmtime(db))}'
+print(f"  -> DB revision '{rev}' not found in migration files, backing up to {backup}")
+shutil.copy2(db, backup)
+os.remove(db)
+for ext in ('.db-wal', '.db-shm'):
+    p = db + ext
+    if os.path.isfile(p):
+        os.remove(p)
+print("  -> Old database removed, ComfyUI will create a fresh one")
+EOF
 
 echo "Starting ComfyUI as user comfy ($PUID:$PGID)..."
 exec sudo -u "#$PUID" --preserve-env=HF_HOME,MODELSCOPE_CACHE,U2NET_HOME,COMFYUI_PATH,GH_PROXY,NVIDIA_VISIBLE_DEVICES,NVIDIA_DRIVER_CAPABILITIES \

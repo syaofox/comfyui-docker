@@ -31,6 +31,7 @@ services:
       - MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
       - U2NET_HOME=/home/comfy/app/models/u2net
       - GH_PROXY=${GH_PROXY:-}
+      - COMFYUI_UPDATE_MODE=${COMFYUI_UPDATE_MODE:-tag}
     deploy:
       resources:
         reservations:
