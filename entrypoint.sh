@@ -37,6 +37,7 @@ DEFAULT_NODES=(
     "judian17/ComfyUI-PixelSmile-Conditioning-Interpolation.git|ComfyUI-PixelSmile-Conditioning-Interpolation"
     "kohya-ss/ComfyUI-Anima-LLLite.git|ComfyUI-Anima-LLLite"
     "Mirumo0u0/ComfyUI-Cosmos-Reference.git|ComfyUI-Cosmos-Reference"
+    "jieg9341-lab/ComfyUI-Krea2-StyleTransfer.git|ComfyUI-Krea2-StyleTransfer"
 )
 
 # 创建模型目录
