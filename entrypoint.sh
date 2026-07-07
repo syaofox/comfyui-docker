@@ -38,6 +38,7 @@ DEFAULT_NODES=(
     "kohya-ss/ComfyUI-Anima-LLLite.git|ComfyUI-Anima-LLLite"
     "Mirumo0u0/ComfyUI-Cosmos-Reference.git|ComfyUI-Cosmos-Reference"
     "jieg9341-lab/ComfyUI-Krea2-StyleTransfer.git|ComfyUI-Krea2-StyleTransfer"
+    "ostris/ComfyUI-Krea2-Ostris-Edit.git|ComfyUI-Krea2-Ostris-Edit"
 )
 
 # 创建模型目录
