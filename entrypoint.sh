@@ -40,6 +40,7 @@ DEFAULT_NODES=(
     "jieg9341-lab/ComfyUI-Krea2-StyleTransfer.git|ComfyUI-Krea2-StyleTransfer"
     "ostris/ComfyUI-Krea2-Ostris-Edit.git|ComfyUI-Krea2-Ostris-Edit"
     "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
+    "lbouaraba/comfyui-krea2edit.git|comfyui-krea2edit"
 )
 
 # 创建模型目录
