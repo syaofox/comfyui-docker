@@ -110,6 +110,11 @@ RUN pip install --no-cache-dir /home/comfy/app/wheel/flash_attn-2.8.3+cu130torch
 
 RUN pip install --no-cache-dir PyOpenGL-accelerate sageattention
 
+COPY wheel/spas_sage_attn-0.1.0-cp312-cp312-linux_x86_64.whl /home/comfy/app/wheel/spas_sage_attn-0.1.0-cp312-cp312-linux_x86_64.whl
+
+RUN pip install --no-cache-dir /home/comfy/app/wheel/spas_sage_attn-0.1.0-cp312-cp312-linux_x86_64.whl && \
+    rm -f /home/comfy/app/wheel/spas_sage_attn-0.1.0-cp312-cp312-linux_x86_64.whl
+
 # 配置 sudo 免密（entrypoint 中 sudo 切换用户用）
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
 
