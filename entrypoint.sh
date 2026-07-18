@@ -42,6 +42,7 @@ DEFAULT_NODES=(
     "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
     "lbouaraba/comfyui-krea2edit.git|comfyui-krea2edit"
     "woct0rdho/ComfyUI-RadialAttn.git|ComfyUI-RadialAttn"
+    "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
 )
 
 # 创建模型目录
