@@ -44,6 +44,7 @@ DEFAULT_NODES=(
     "woct0rdho/ComfyUI-RadialAttn.git|ComfyUI-RadialAttn"
     "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     "Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git|Nvidia_RTX_Nodes_ComfyUI"
+    "ethanfel/ComfyUI-Krea2TextEncoder.git|ComfyUI-Krea2TextEncoder"
 )
 
 # 创建模型目录
