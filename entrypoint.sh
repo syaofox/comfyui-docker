@@ -75,7 +75,8 @@ if [ -f "$UPDATE_FLAG" ]; then
     if [ "$COMFYUI_UPDATE_MODE" = "latest" ]; then
         echo "  -> Mode: latest (tracking default branch)"
         CURRENT_SHA=$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo "unknown")
-        if git -C "$APP_DIR" fetch --depth 1 origin 2>/dev/null; then
+        git -C "$APP_DIR" remote set-head origin -a 2>/dev/null || true
+        if git -C "$APP_DIR" fetch --depth 1 origin master 2>/dev/null; then
             LATEST_SHA=$(git -C "$APP_DIR" rev-parse FETCH_HEAD 2>/dev/null || echo "unknown")
             if [ "$CURRENT_SHA" != "$LATEST_SHA" ]; then
                 echo "  -> Upgrading ComfyUI: ${CURRENT_SHA:0:8} -> ${LATEST_SHA:0:8}"
