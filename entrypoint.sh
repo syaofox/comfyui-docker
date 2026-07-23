@@ -24,7 +24,7 @@ DEFAULT_NODES=(
     "kijai/ComfyUI-MMAudio.git|ComfyUI-MMAudio"
     "yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
     "1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
-    "numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
+    # "numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
     "Kosinkadink/ComfyUI-VideoHelperSuite.git|ComfyUI-VideoHelperSuite"
     "ClownsharkBatwing/RES4LYF.git|RES4LYF"
     "rgthree/rgthree-comfy.git|rgthree-comfy"
@@ -45,6 +45,7 @@ DEFAULT_NODES=(
     "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     "Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git|Nvidia_RTX_Nodes_ComfyUI"
     "ethanfel/ComfyUI-Krea2TextEncoder.git|ComfyUI-Krea2TextEncoder"
+    "Fannovel16/comfyui_controlnet_aux.git|comfyui_controlnet_aux"
 )
 
 # 创建模型目录
