@@ -46,6 +46,7 @@ DEFAULT_NODES=(
     "Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git|Nvidia_RTX_Nodes_ComfyUI"
     "ethanfel/ComfyUI-Krea2TextEncoder.git|ComfyUI-Krea2TextEncoder"
     "Fannovel16/comfyui_controlnet_aux.git|comfyui_controlnet_aux"
+    "smthemex/ComfyUI_UniBlockSwap.git|ComfyUI_UniBlockSwap"
 )
 
 # 创建模型目录
