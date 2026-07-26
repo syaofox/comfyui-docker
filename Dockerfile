@@ -121,7 +121,7 @@ RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
 # Build 阶段从宿主机 custom_nodes 读取 requirements.txt 预装依赖（带 pip 缓存跨构建共享）
 RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
     --mount=type=cache,target=/root/.cache/pip \
-    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]" && \
+    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)" && \
     for req_file in /tmp/host_custom_nodes/*/requirements.txt; do \
       [ -f "$req_file" ] || continue; \
       name="$(basename "$(dirname "$req_file")")"; \
