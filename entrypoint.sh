@@ -15,7 +15,7 @@ DEFAULT_NODES=(
     "Comfy-Org/ComfyUI-Manager.git|ComfyUI-Manager"
     # 私有节点列表
     "syaofox/sfnodes.git|sfnodes"
-    "syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"    
+    "syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"
     # "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
     "city96/ComfyUI-GGUF.git|ComfyUI-GGUF"

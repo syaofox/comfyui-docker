@@ -118,6 +118,19 @@ RUN pip install --no-cache-dir /home/comfy/app/wheel/spas_sage_attn-0.1.0-cp312-
 # 配置 sudo 免密（entrypoint 中 sudo 切换用户用）
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
 
+# Build 阶段从宿主机 custom_nodes 读取 requirements.txt 预装依赖（带 pip 缓存跨构建共享）
+RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
+    --mount=type=cache,target=/root/.cache/pip \
+    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]" && \
+    for req_file in /tmp/host_custom_nodes/*/requirements.txt; do \
+      [ -f "$req_file" ] || continue; \
+      name="$(basename "$(dirname "$req_file")")"; \
+      echo "  -> Installing requirements for: $name"; \
+      grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_reqs.txt 2>/dev/null; \
+      [ -s /tmp/node_reqs.txt ] && \
+        PIP_NO_CACHE_DIR=0 pip install -r /tmp/node_reqs.txt -c /tmp/constraints.txt || true; \
+    done
+
 COPY entrypoint.sh /entrypoint.sh
 
 EXPOSE 8188
