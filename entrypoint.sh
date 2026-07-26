@@ -88,7 +88,7 @@ if [ -f "$UPDATE_FLAG" ]; then
                 # 重新安装 ComfyUI 的依赖
                 if [ -f "$APP_DIR/requirements.txt" ]; then
                     echo "  -> Reinstalling ComfyUI requirements..."
-                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
                     grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
                         && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
                         || echo "  -> ComfyUI requirements install failed"
@@ -117,7 +117,7 @@ if [ -f "$UPDATE_FLAG" ]; then
                 # 重新安装 ComfyUI 的依赖
                 if [ -f "$APP_DIR/requirements.txt" ]; then
                     echo "  -> Reinstalling ComfyUI requirements..."
-                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
                     grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
                         && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
                         || echo "  -> ComfyUI requirements install failed"
@@ -165,7 +165,7 @@ fi
 
 # 安装节点的 pip 依赖（每次启动都执行，确保新增依赖被安装）
 echo "=== Installing custom node requirements ==="
-python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
 FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)[=~><!]"
 for entry in "${DEFAULT_NODES[@]}"; do
     name="${entry##*|}"
