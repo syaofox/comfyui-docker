@@ -42,7 +42,7 @@ DEFAULT_NODES=(
     "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
     "lbouaraba/comfyui-krea2edit.git|comfyui-krea2edit"
     "woct0rdho/ComfyUI-RadialAttn.git|ComfyUI-RadialAttn"
-    "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
+    # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     "Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git|Nvidia_RTX_Nodes_ComfyUI"
     "ethanfel/ComfyUI-Krea2TextEncoder.git|ComfyUI-Krea2TextEncoder"
     "Fannovel16/comfyui_controlnet_aux.git|comfyui_controlnet_aux"
