@@ -48,6 +48,7 @@ DEFAULT_NODES=(
     "Fannovel16/comfyui_controlnet_aux.git|comfyui_controlnet_aux"
     "smthemex/ComfyUI_UniBlockSwap.git|ComfyUI_UniBlockSwap"
     "CCpt5/ComfyUI-BerniniStudio.git|ComfyUI-BerniniStudio"
+    "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
 )
 
 # 创建模型目录
