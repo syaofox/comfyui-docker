@@ -47,6 +47,7 @@ DEFAULT_NODES=(
     "ethanfel/ComfyUI-Krea2TextEncoder.git|ComfyUI-Krea2TextEncoder"
     "Fannovel16/comfyui_controlnet_aux.git|comfyui_controlnet_aux"
     "smthemex/ComfyUI_UniBlockSwap.git|ComfyUI_UniBlockSwap"
+    "CCpt5/ComfyUI-BerniniStudio.git|ComfyUI-BerniniStudio"
 )
 
 # 创建模型目录
