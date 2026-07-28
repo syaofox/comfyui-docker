@@ -50,6 +50,7 @@ DEFAULT_NODES=(
     "CCpt5/ComfyUI-BerniniStudio.git|ComfyUI-BerniniStudio"
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
     "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
+    "facok/comfyui-krea2-controlnet.git|comfyui-krea2-controlnet"
 )
 
 # 创建模型目录
