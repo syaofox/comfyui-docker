@@ -51,6 +51,7 @@ DEFAULT_NODES=(
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
     "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
     "facok/comfyui-krea2-controlnet.git|comfyui-krea2-controlnet"
+    "lookuters22/MAGICMATCH.git|MAGICMATCH"
 )
 
 # 创建模型目录
