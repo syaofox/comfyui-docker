@@ -243,5 +243,5 @@ print("  -> Old database removed, ComfyUI will create a fresh one")
 EOF
 
 echo "Starting ComfyUI as user comfy ($PUID:$PGID)..."
-exec sudo -u "#$PUID" --preserve-env=HF_HOME,MODELSCOPE_CACHE,U2NET_HOME,COMFYUI_PATH,GH_PROXY,NVIDIA_VISIBLE_DEVICES,NVIDIA_DRIVER_CAPABILITIES \
+exec sudo -u "#$PUID" --preserve-env=HF_ENDPOINT,HF_HOME,MODELSCOPE_CACHE,U2NET_HOME,COMFYUI_PATH,GH_PROXY,NVIDIA_VISIBLE_DEVICES,NVIDIA_DRIVER_CAPABILITIES \
     -- bash -c "cd $APP_DIR && python3 main.py --listen"

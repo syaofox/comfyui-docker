@@ -5,6 +5,7 @@ ARG PGID=1000
 ARG GH_PROXY=
 ARG APT_MIRROR=
 ARG PIP_MIRROR=
+ARG HF_ENDPOINT=
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -138,6 +139,7 @@ EXPOSE 8188
 ENV PUID=${PUID}
 ENV PGID=${PGID}
 ENV GH_PROXY=${GH_PROXY}
+ENV HF_ENDPOINT=${HF_ENDPOINT}
 ENV HF_HOME=/home/comfy/app/.cache/hf_download
 ENV MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
 ENV U2NET_HOME=/home/comfy/app/models/u2net

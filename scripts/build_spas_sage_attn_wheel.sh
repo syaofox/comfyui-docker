@@ -2,9 +2,11 @@
 set -e
 
 WHEEL_DIR="$(cd "$(dirname "$0")/../wheel" && pwd)"
+GH_PROXY="${GH_PROXY:-}"
 
 docker run --rm \
   -v "$WHEEL_DIR:/wheel" \
+  -e GH_PROXY="$GH_PROXY" \
   pytorch/pytorch:2.10.0-cuda13.0-cudnn9-devel \
   bash -c '
 set -ex
@@ -13,7 +15,9 @@ rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED
 apt-get update && apt-get install -y git
 pip install --upgrade pip setuptools wheel
 
-git clone --depth 1 https://github.com/woct0rdho/SpargeAttn.git /tmp/spargeattn
+GH="${GH_PROXY:+${GH_PROXY}/}https://github.com/"
+
+git clone --depth 1 "${GH}woct0rdho/SpargeAttn.git" /tmp/spargeattn
 cd /tmp/spargeattn
 
 pip install --no-cache-dir einops numpy packaging pybind11 setuptools tqdm
