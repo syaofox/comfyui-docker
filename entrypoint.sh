@@ -49,6 +49,7 @@ DEFAULT_NODES=(
     "smthemex/ComfyUI_UniBlockSwap.git|ComfyUI_UniBlockSwap"
     "CCpt5/ComfyUI-BerniniStudio.git|ComfyUI-BerniniStudio"
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
+    "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
 )
 
 # 创建模型目录
