@@ -52,10 +52,6 @@ DEFAULT_NODES=(
     "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
     "facok/comfyui-krea2-controlnet.git|comfyui-krea2-controlnet"
     "lookuters22/MAGICMATCH.git|MAGICMATCH"
-    "ltdrdata/ComfyUI-Impact-Pack.git|ComfyUI-Impact-Pack"
-    "ltdrdata/ComfyUI-Impact-Subpack.git|ComfyUI-Impact-Subpack"
-    "ltdrdata/was-node-suite-comfyui.git|was-node-suite-comfyui"
-    "Suzie1/ComfyUI_Comfyroll_CustomNodes.git|ComfyUI_Comfyroll_CustomNodes"
 )
 
 # 创建模型目录
