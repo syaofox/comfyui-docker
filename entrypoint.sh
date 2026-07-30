@@ -136,20 +136,7 @@ if [ -f "$UPDATE_FLAG" ]; then
         fi
     fi
 
-    # 2. 克隆缺失的默认节点
-    echo "=== Cloning missing custom nodes ==="
-    for entry in "${DEFAULT_NODES[@]}"; do
-        repo="${entry%%|*}"
-        name="${entry##*|}"
-        node_dir="$APP_DIR/custom_nodes/$name"
-        if [ ! -d "$node_dir" ]; then
-            echo "  -> Cloning: $name"
-            git clone --depth 1 "${GH}${repo}" "$node_dir" \
-                || echo "  -> Failed to clone $name, skipping"
-        fi
-    done
-
-    # 3. 更新已有的默认节点
+    # 2. 更新已有的默认节点
     echo "=== Updating existing custom nodes ==="
     for entry in "${DEFAULT_NODES[@]}"; do
         repo="${entry%%|*}"
@@ -168,6 +155,19 @@ if [ -f "$UPDATE_FLAG" ]; then
     rm -f "$UPDATE_FLAG"
     echo "=== Upgrade complete, flag removed ==="
 fi
+
+# 克隆缺失的默认节点（每次启动都检查，确保新增节点被克隆）
+echo "=== Cloning missing custom nodes ==="
+for entry in "${DEFAULT_NODES[@]}"; do
+    repo="${entry%%|*}"
+    name="${entry##*|}"
+    node_dir="$APP_DIR/custom_nodes/$name"
+    if [ ! -d "$node_dir" ]; then
+        echo "  -> Cloning: $name"
+        git clone --depth 1 "${GH}${repo}" "$node_dir" \
+            || echo "  -> Failed to clone $name, skipping"
+    fi
+done
 
 # 安装节点的 pip 依赖（每次启动都执行，确保新增依赖被安装）
 echo "=== Installing custom node requirements ==="
