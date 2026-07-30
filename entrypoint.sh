@@ -52,6 +52,7 @@ DEFAULT_NODES=(
     "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
     "facok/comfyui-krea2-controlnet.git|comfyui-krea2-controlnet"
     "lookuters22/MAGICMATCH.git|MAGICMATCH"
+    "Auryg/Krea-2-Two-Stage-Sampler.git|Krea-2-Two-Stage-Sampler"
 )
 
 # 创建模型目录
