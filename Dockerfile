@@ -45,6 +45,8 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     libglut3.12 \
     libglut-dev \
+    fonts-dejavu-core \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 FFmpeg (BtbN 预编译版本，带 NVENC 支持)
