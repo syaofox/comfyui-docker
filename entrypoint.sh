@@ -44,6 +44,8 @@ DEFAULT_NODES=(
     "ssitu/ComfyUI_UltimateSDUpscale.git|ComfyUI_UltimateSDUpscale"
     "woct0rdho/ComfyUI-RadialAttn.git|ComfyUI-RadialAttn"
     "yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
+    "KonokoAz/ComfyUI-Krea2-Reference.git|ComfyUI-Krea2-Reference"
+
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     # "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
     # "Mirumo0u0/ComfyUI-Cosmos-Reference.git|ComfyUI-Cosmos-Reference"
