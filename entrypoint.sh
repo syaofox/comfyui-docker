@@ -16,6 +16,7 @@ DEFAULT_NODES=(
     # 私有节点列表
     "syaofox/sfnodes.git|sfnodes"
     "syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"
+    "syaofox/ComfyUI-RMBG.git|ComfyUI-RMBG"
     # "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
@@ -45,6 +46,8 @@ DEFAULT_NODES=(
     "woct0rdho/ComfyUI-RadialAttn.git|ComfyUI-RadialAttn"
     "yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
     "KonokoAz/ComfyUI-Krea2-Reference.git|ComfyUI-Krea2-Reference"
+    "lrzjason/ComfyUI-EditUtils.git|ComfyUI-EditUtils"
+
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     # "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
