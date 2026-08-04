@@ -20,7 +20,7 @@ DEFAULT_NODES=(
     # "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
-    "1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
+    # "1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
     "Auryg/Krea-2-Two-Stage-Sampler.git|Krea-2-Two-Stage-Sampler"
     "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
     "CCpt5/ComfyUI-BerniniStudio.git|ComfyUI-BerniniStudio"
