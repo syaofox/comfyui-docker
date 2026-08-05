@@ -48,6 +48,7 @@ DEFAULT_NODES=(
     "KonokoAz/ComfyUI-Krea2-Reference.git|ComfyUI-Krea2-Reference"
     "lrzjason/ComfyUI-EditUtils.git|ComfyUI-EditUtils"
     "judian17/ComfyUI-SDPose-OOD.git|ComfyUI-SDPose-OOD"
+    "erosDiffusion/ComfyUI-EulerDiscreteScheduler.git|ComfyUI-EulerDiscreteScheduler"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
