@@ -6,6 +6,9 @@ ARG GH_PROXY=
 ARG APT_MIRROR=
 ARG PIP_MIRROR=
 ARG HF_ENDPOINT=
+ARG HF_HOME=
+ARG MODELSCOPE_CACHE=
+ARG U2NET_HOME=
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -21,8 +24,8 @@ RUN if [ -n "$APT_MIRROR" ]; then \
     sed -i "s|http://security.ubuntu.com|${APT_MIRROR}|g" /etc/apt/sources.list 2>/dev/null || true; \
 fi
 
-# 可选：设置 pip 镜像源
-ENV PIP_INDEX_URL=${PIP_MIRROR}
+# 可选：设置 pip 镜像源（留空时显式使用官方源，避免空串被 pip 当有效配置）
+ENV PIP_INDEX_URL=${PIP_MIRROR:-https://pypi.org/simple}
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -141,10 +144,12 @@ EXPOSE 8188
 ENV PUID=${PUID}
 ENV PGID=${PGID}
 ENV GH_PROXY=${GH_PROXY}
-ENV HF_ENDPOINT=${HF_ENDPOINT}
-ENV HF_HOME=/home/comfy/app/.cache/hf_download
-ENV MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
-ENV U2NET_HOME=/home/comfy/app/models/u2net
+# 以下变量被第三方库通过 os.getenv("VAR", default) 读取：变量存在但为空串时不会回退默认值，
+# 会像 HF_ENDPOINT 一样被当作空值使用，因此必须兜底为非空默认（HF_ENDPOINT 教训，参考 hf_hub 空端点报错）
+ENV HF_ENDPOINT=${HF_ENDPOINT:-https://huggingface.co}
+ENV HF_HOME=${HF_HOME:-/home/comfy/app/.cache/hf_download}
+ENV MODELSCOPE_CACHE=${MODELSCOPE_CACHE:-/home/comfy/app/.cache/modelscope}
+ENV U2NET_HOME=${U2NET_HOME:-/home/comfy/app/models/u2net}
 ENV COMFYUI_PATH=/home/comfy/app
 
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]

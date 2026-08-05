@@ -9,7 +9,7 @@ services:
         GH_PROXY: "${GH_PROXY:-}"
         APT_MIRROR: "${APT_MIRROR:-}"
         PIP_MIRROR: "${PIP_MIRROR:-}"
-        HF_ENDPOINT: "${HF_ENDPOINT:-}"
+        HF_ENDPOINT: "${HF_ENDPOINT:-https://huggingface.co}"
     image: comfyui-docker:latest
     container_name: comfyui-docker
     ports:
@@ -32,7 +32,7 @@ services:
       - MODELSCOPE_CACHE=/home/comfy/app/.cache/modelscope
       - U2NET_HOME=/home/comfy/app/models/u2net
       - GH_PROXY=${GH_PROXY:-}
-      - HF_ENDPOINT=${HF_ENDPOINT:-}
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://huggingface.co}
       - COMFYUI_UPDATE_MODE=${COMFYUI_UPDATE_MODE:-tag}
     deploy:
       resources:

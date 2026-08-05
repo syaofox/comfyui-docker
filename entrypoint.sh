@@ -47,6 +47,7 @@ DEFAULT_NODES=(
     "yawiii/ComfyUI-Prompt-Assistant.git|ComfyUI-Prompt-Assistant"
     "KonokoAz/ComfyUI-Krea2-Reference.git|ComfyUI-Krea2-Reference"
     "lrzjason/ComfyUI-EditUtils.git|ComfyUI-EditUtils"
+    "judian17/ComfyUI-SDPose-OOD.git|ComfyUI-SDPose-OOD"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
