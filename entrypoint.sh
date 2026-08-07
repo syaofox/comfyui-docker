@@ -49,6 +49,7 @@ DEFAULT_NODES=(
     "lrzjason/ComfyUI-EditUtils.git|ComfyUI-EditUtils"
     "judian17/ComfyUI-SDPose-OOD.git|ComfyUI-SDPose-OOD"
     "erosDiffusion/ComfyUI-EulerDiscreteScheduler.git|ComfyUI-EulerDiscreteScheduler"
+    "https://gitlab.com/pixaroma/comfyui-pixaroma.git|comfyui-pixaroma"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
@@ -151,8 +152,12 @@ if [ -f "$UPDATE_FLAG" ]; then
         node_dir="$APP_DIR/custom_nodes/$name"
         if [ -d "$node_dir/.git" ]; then
             echo "  -> Updating: $name"
-            # 更新 remote URL（应对 GH_PROXY 变化）
-            git -C "$node_dir" remote set-url origin "${GH}${repo}" 2>/dev/null || true
+            # 更新 remote URL（应对 GH_PROXY 变化；完整 URL 直接使用，不拼 GH 前缀）
+            case "$repo" in
+                http://*|https://*) repo_url="$repo" ;;
+                *) repo_url="${GH}${repo}" ;;
+            esac
+            git -C "$node_dir" remote set-url origin "$repo_url" 2>/dev/null || true
             git -C "$node_dir" fetch --depth 1 origin \
                 && git -C "$node_dir" reset --hard origin/HEAD \
                 || echo "  -> Skipped $name (update failed)"
@@ -171,7 +176,11 @@ for entry in "${DEFAULT_NODES[@]}"; do
     node_dir="$APP_DIR/custom_nodes/$name"
     if [ ! -d "$node_dir" ]; then
         echo "  -> Cloning: $name"
-        git clone --depth 1 "${GH}${repo}" "$node_dir" \
+        case "$repo" in
+            http://*|https://*) repo_url="$repo" ;;
+            *) repo_url="${GH}${repo}" ;;
+        esac
+        git clone --depth 1 "$repo_url" "$node_dir" \
             || echo "  -> Failed to clone $name, skipping"
     fi
 done
