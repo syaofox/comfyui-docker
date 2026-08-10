@@ -50,6 +50,8 @@ DEFAULT_NODES=(
     "judian17/ComfyUI-SDPose-OOD.git|ComfyUI-SDPose-OOD"
     "erosDiffusion/ComfyUI-EulerDiscreteScheduler.git|ComfyUI-EulerDiscreteScheduler"
     "https://gitlab.com/pixaroma/comfyui-pixaroma.git|comfyui-pixaroma"
+    "zeus-onl/RegioCraft.git|RegioCraft"
+    "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
