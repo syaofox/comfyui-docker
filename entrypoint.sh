@@ -52,6 +52,9 @@ DEFAULT_NODES=(
     "https://gitlab.com/pixaroma/comfyui-pixaroma.git|comfyui-pixaroma"
     "zeus-onl/RegioCraft.git|RegioCraft"
     "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
+    "Hearmeman24/ComfyUI-LoRAPlotNode.git|ComfyUI-LoRAPlotNode"
+    "alexw5702-afk/krea2-anypaint.git|krea2-anypaint"
+    "catmaxzj/comfyui-mini-nodes.git|comfyui-mini-nodes"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
