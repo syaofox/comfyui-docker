@@ -21,6 +21,7 @@ DEFAULT_NODES=(
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
     # "1038lab/ComfyUI-RMBG.git|ComfyUI-RMBG"
+    "chrisgoringe/cg-use-everywhere.git|cg-use-everywhere"
     "Auryg/Krea-2-Two-Stage-Sampler.git|Krea-2-Two-Stage-Sampler"
     "capitan01R/ComfyUI-Krea2T-Enhancer.git|ComfyUI-Krea2T-Enhancer"
     "CCpt5/ComfyUI-BerniniStudio.git|ComfyUI-BerniniStudio"
@@ -49,18 +50,16 @@ DEFAULT_NODES=(
     "lrzjason/ComfyUI-EditUtils.git|ComfyUI-EditUtils"
     "judian17/ComfyUI-SDPose-OOD.git|ComfyUI-SDPose-OOD"
     "erosDiffusion/ComfyUI-EulerDiscreteScheduler.git|ComfyUI-EulerDiscreteScheduler"
-    "https://gitlab.com/pixaroma/comfyui-pixaroma.git|comfyui-pixaroma"
-    "zeus-onl/RegioCraft.git|RegioCraft"
-    "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
-    "Hearmeman24/ComfyUI-LoRAPlotNode.git|ComfyUI-LoRAPlotNode"
+    # "https://gitlab.com/pixaroma/comfyui-pixaroma.git|comfyui-pixaroma"
+    # "zeus-onl/RegioCraft.git|RegioCraft"
+    # "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
     "alexw5702-afk/krea2-anypaint.git|krea2-anypaint"
-    "catmaxzj/comfyui-mini-nodes.git|comfyui-mini-nodes"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     # "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
     # "Mirumo0u0/ComfyUI-Cosmos-Reference.git|ComfyUI-Cosmos-Reference"
-    # "chrisgoringe/cg-use-everywhere.git|cg-use-everywhere"
+    
     # "cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
     # "filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
     # "o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
