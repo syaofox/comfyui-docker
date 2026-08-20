@@ -128,9 +128,12 @@ RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
 RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
     --mount=type=cache,target=/root/.cache/pip \
     FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)" && \
-    for req_file in /tmp/host_custom_nodes/*/requirements.txt; do \
+    for node_dir in /tmp/host_custom_nodes/*/; do \
+      [ -d "$node_dir" ] || continue; \
+      req_file="$node_dir/requirements.txt"; \
+      [ -f "$req_file" ] || req_file="$node_dir/requirements-no-cupy.txt"; \
       [ -f "$req_file" ] || continue; \
-      name="$(basename "$(dirname "$req_file")")"; \
+      name="$(basename "$node_dir")"; \
       echo "  -> Installing requirements for: $name"; \
       grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_reqs.txt 2>/dev/null; \
       [ -s /tmp/node_reqs.txt ] && \

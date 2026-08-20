@@ -31,6 +31,7 @@ DEFAULT_NODES=(
     "ethanfel/ComfyUI-Krea2TextEncoder.git|ComfyUI-Krea2TextEncoder"
     "facok/comfyui-krea2-controlnet.git|comfyui-krea2-controlnet"
     "Fannovel16/comfyui_controlnet_aux.git|comfyui_controlnet_aux"
+    "Fannovel16/ComfyUI-Frame-Interpolation.git|ComfyUI-Frame-Interpolation"
     "jieg9341-lab/ComfyUI-Krea2-StyleTransfer.git|ComfyUI-Krea2-StyleTransfer"
     "jtydhr88/ComfyUI-qwenmultiangle.git|ComfyUI-qwenmultiangle"
     "judian17/ComfyUI-PixelSmile-Conditioning-Interpolation.git|ComfyUI-PixelSmile-Conditioning-Interpolation"
@@ -54,6 +55,7 @@ DEFAULT_NODES=(
     # "zeus-onl/RegioCraft.git|RegioCraft"
     # "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
     "alexw5702-afk/krea2-anypaint.git|krea2-anypaint"
+    "princepainter/ComfyUI-PainterI2V.git|ComfyUI-PainterI2V"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
@@ -197,6 +199,7 @@ for entry in "${DEFAULT_NODES[@]}"; do
     name="${entry##*|}"
     node_dir="$APP_DIR/custom_nodes/$name"
     req_file="$node_dir/requirements.txt"
+    [ -f "$req_file" ] || req_file="$node_dir/requirements-no-cupy.txt"
     if [ -f "$req_file" ]; then
         echo "  -> Installing requirements for: $name"
         filtered_req=$(grep -v -iE "$FILTER_PATTERN" "$req_file" || true)
