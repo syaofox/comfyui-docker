@@ -50,10 +50,11 @@ DEFAULT_NODES=(
     "KonokoAz/ComfyUI-Krea2-Reference.git|ComfyUI-Krea2-Reference"
     "lrzjason/ComfyUI-EditUtils.git|ComfyUI-EditUtils"
     "judian17/ComfyUI-SDPose-OOD.git|ComfyUI-SDPose-OOD"
+    "judian17/ComfyUI_YOLO_For_Multi_SDPose_Detection.git|ComfyUI_YOLO_For_Multi_SDPose_Detection"
     "erosDiffusion/ComfyUI-EulerDiscreteScheduler.git|ComfyUI-EulerDiscreteScheduler"
     # "https://gitlab.com/pixaroma/comfyui-pixaroma.git|comfyui-pixaroma"
     # "zeus-onl/RegioCraft.git|RegioCraft"
-    # "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
+    "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
     "alexw5702-afk/krea2-anypaint.git|krea2-anypaint"
     "princepainter/ComfyUI-PainterI2V.git|ComfyUI-PainterI2V"
 
@@ -62,11 +63,12 @@ DEFAULT_NODES=(
     # "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
     # "Mirumo0u0/ComfyUI-Cosmos-Reference.git|ComfyUI-Cosmos-Reference"
     
-    # "cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
-    # "filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
+    "cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
+    "filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
     # "o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
     # "numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
     # "LAOGOU-666/Comfyui-Memory_Cleanup.git|Comfyui-Memory_Cleanup"
+    "yolain/ComfyUI-Easy-Use.git|ComfyUI-Easy-Use"
 )
 
 # 创建模型目录
