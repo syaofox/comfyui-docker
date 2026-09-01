@@ -34,6 +34,13 @@ services:
       - GH_PROXY=${GH_PROXY:-}
       - HF_ENDPOINT=${HF_ENDPOINT:-https://huggingface.co}
       - COMFYUI_UPDATE_MODE=${COMFYUI_UPDATE_MODE:-tag}
+      - SKIP_CUSTOM_NODE_REQUIREMENTS=${SKIP_CUSTOM_NODE_REQUIREMENTS:-0}
+      - FORCE_CUSTOM_NODE_REQUIREMENTS=${FORCE_CUSTOM_NODE_REQUIREMENTS:-0}
+      - PIP_MIRROR=${PIP_MIRROR:-}
+      - PIP_INDEX_URL=${PIP_INDEX_URL:-${PIP_MIRROR:-https://pypi.org/simple}}
+      - UV_INDEX_URL=${UV_INDEX_URL:-${PIP_MIRROR:-https://pypi.org/simple}}
+      - UV_CACHE_DIR=/home/comfy/app/.cache/uv
+      - PIP_CACHE_DIR=/home/comfy/app/.cache/pip
     deploy:
       resources:
         reservations:

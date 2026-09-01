@@ -24,8 +24,13 @@ RUN if [ -n "$APT_MIRROR" ]; then \
     sed -i "s|http://security.ubuntu.com|${APT_MIRROR}|g" /etc/apt/sources.list 2>/dev/null || true; \
 fi
 
-# 可选：设置 pip 镜像源（留空时显式使用官方源，避免空串被 pip 当有效配置）
-ENV PIP_INDEX_URL=${PIP_MIRROR:-https://pypi.org/simple}
+# 可选：设置 pip/uv 镜像源（留空时显式使用官方源，避免空串被 pip 当有效配置）
+# uv 优先读取 UV_INDEX_URL，未设置时 fallback 到 PIP_INDEX_URL，此处双设以兼容
+# 缓存统一落到 /home/comfy/app/.cache（已通过 volume 持久化），避免 /root/.cache 双重挂载
+ENV PIP_INDEX_URL=${PIP_MIRROR:-https://pypi.org/simple} \
+    UV_INDEX_URL=${PIP_MIRROR:-https://pypi.org/simple} \
+    UV_CACHE_DIR=/home/comfy/app/.cache/uv \
+    PIP_CACHE_DIR=/home/comfy/app/.cache/pip
 
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -96,8 +101,8 @@ COPY wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl /hom
 RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl && \
     rm -f /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu130.basic-cp312-cp312-linux_x86_64.whl
 
-# 安装 pytest（cupy 的 cupy.testing 模块依赖它）
-RUN pip install --no-cache-dir pytest
+# 安装 uv（用于加速 pip 安装，兼容 git+ 依赖）与 pytest（cupy 的 cupy.testing 模块依赖它）
+RUN pip install --no-cache-dir uv pytest && uv --version
 
 
 # 生成 constraints 文件，锁定核心包版本（防止传递依赖降级）
@@ -124,10 +129,13 @@ RUN pip install --no-cache-dir /home/comfy/app/wheel/spas_sage_attn-0.1.0-cp312-
 # 配置 sudo 免密（entrypoint 中 sudo 切换用户用）
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
 
-# Build 阶段从宿主机 custom_nodes 读取 requirements.txt 预装依赖（带 pip 缓存跨构建共享）
+# Build 阶段从宿主机 custom_nodes 读取 requirements.txt 预装依赖（带 pip/uv 缓存跨构建共享，优先 uv）
 RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
-    --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/home/comfy/app/.cache/pip \
+    --mount=type=cache,target=/home/comfy/app/.cache/uv \
     FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)" && \
+    if command -v uv >/dev/null 2>&1; then PIP_CMD="uv pip install --system"; else PIP_CMD="pip install"; fi && \
+    echo "  -> Build installer: $PIP_CMD" && \
     for node_dir in /tmp/host_custom_nodes/*/; do \
       [ -d "$node_dir" ] || continue; \
       req_file="$node_dir/requirements.txt"; \
@@ -137,7 +145,7 @@ RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
       echo "  -> Installing requirements for: $name"; \
       grep -v -iE "$FILTER_PATTERN" "$req_file" > /tmp/node_reqs.txt 2>/dev/null; \
       [ -s /tmp/node_reqs.txt ] && \
-        PIP_NO_CACHE_DIR=0 pip install -r /tmp/node_reqs.txt -c /tmp/constraints.txt || true; \
+        PIP_NO_CACHE_DIR=0 $PIP_CMD -r /tmp/node_reqs.txt -c /tmp/constraints.txt || true; \
     done
 
 COPY entrypoint.sh /entrypoint.sh

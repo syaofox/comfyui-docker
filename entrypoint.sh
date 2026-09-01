@@ -6,9 +6,36 @@ PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 GH_PROXY="${GH_PROXY:-}"
 COMFYUI_UPDATE_MODE="${COMFYUI_UPDATE_MODE:-tag}"
+SKIP_CUSTOM_NODE_REQUIREMENTS="${SKIP_CUSTOM_NODE_REQUIREMENTS:-0}"
+FORCE_CUSTOM_NODE_REQUIREMENTS="${FORCE_CUSTOM_NODE_REQUIREMENTS:-0}"
+HASH_DIR="/tmp/node_requirements_hashes"
 
 # GitHub URL 前缀（为空则直连，非空则走代理）
 GH="${GH_PROXY:+${GH_PROXY}/}https://github.com/"
+
+# 选择安装器：优先 uv pip --system，回退到 pip
+get_pip_cmd() {
+    if command -v uv >/dev/null 2>&1; then
+        echo "uv pip install --system"
+    elif python3 -m uv --version >/dev/null 2>&1; then
+        echo "python3 -m uv pip install --system"
+    else
+        echo "pip install --no-cache-dir"
+    fi
+}
+
+# 统一的 requirements 安装封装（支持 uv/pip，兼容 -c constraints）
+install_requirements() {
+    local req_file="$1"
+    local constraints_file="$2"
+    if command -v uv >/dev/null 2>&1; then
+        uv pip install --system -r "$req_file" -c "$constraints_file"
+    elif python3 -m uv --version >/dev/null 2>&1; then
+        python3 -m uv pip install --system -r "$req_file" -c "$constraints_file"
+    else
+        pip install --no-cache-dir -r "$req_file" -c "$constraints_file"
+    fi
+}
 
 # 默认节点列表（URL|目录名）
 DEFAULT_NODES=(
@@ -116,7 +143,7 @@ if [ -f "$UPDATE_FLAG" ]; then
                     echo "  -> Reinstalling ComfyUI requirements..."
                     python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
                     grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
-                        && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
+                        && install_requirements /tmp/filtered_requirements.txt /tmp/constraints.txt \
                         || echo "  -> ComfyUI requirements install failed"
                 fi
             else
@@ -145,7 +172,7 @@ if [ -f "$UPDATE_FLAG" ]; then
                     echo "  -> Reinstalling ComfyUI requirements..."
                     python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
                     grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
-                        && pip install --no-cache-dir -r /tmp/filtered_requirements.txt -c /tmp/constraints.txt \
+                        && install_requirements /tmp/filtered_requirements.txt /tmp/constraints.txt \
                         || echo "  -> ComfyUI requirements install failed"
                 fi
             else
@@ -156,7 +183,7 @@ if [ -f "$UPDATE_FLAG" ]; then
         fi
     fi
 
-    # 2. 更新已有的默认节点
+    # 2. 更新已有的默认节点（成功后清除 hash，强制下阶段重装）
     echo "=== Updating existing custom nodes ==="
     for entry in "${DEFAULT_NODES[@]}"; do
         repo="${entry%%|*}"
@@ -170,9 +197,12 @@ if [ -f "$UPDATE_FLAG" ]; then
                 *) repo_url="${GH}${repo}" ;;
             esac
             git -C "$node_dir" remote set-url origin "$repo_url" 2>/dev/null || true
-            git -C "$node_dir" fetch --depth 1 origin \
-                && git -C "$node_dir" reset --hard origin/HEAD \
-                || echo "  -> Skipped $name (update failed)"
+            if git -C "$node_dir" fetch --depth 1 origin && git -C "$node_dir" reset --hard origin/HEAD; then
+                echo "  -> Updated $name, clearing requirements hash"
+                rm -f "$HASH_DIR/${name}.sha256"
+            else
+                echo "  -> Skipped $name (update failed)"
+            fi
         fi
     done
 
@@ -197,24 +227,41 @@ for entry in "${DEFAULT_NODES[@]}"; do
     fi
 done
 
-# 安装节点的 pip 依赖（每次启动都执行，确保新增依赖被安装）
-echo "=== Installing custom node requirements ==="
-python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
-FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)"
-for entry in "${DEFAULT_NODES[@]}"; do
-    name="${entry##*|}"
-    node_dir="$APP_DIR/custom_nodes/$name"
-    req_file="$node_dir/requirements.txt"
-    [ -f "$req_file" ] || req_file="$node_dir/requirements-no-cupy.txt"
-    if [ -f "$req_file" ]; then
-        echo "  -> Installing requirements for: $name"
+# 安装节点的 pip 依赖（hash 守卫 + uv pip，/tmp 方案：重启跳过，更新或变更才重装）
+if [[ "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "1" || "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "true" || "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "yes" ]]; then
+    echo "=== Skipping custom node requirements (SKIP_CUSTOM_NODE_REQUIREMENTS=$SKIP_CUSTOM_NODE_REQUIREMENTS) ==="
+else
+    echo "=== Installing custom node requirements ==="
+    mkdir -p "$HASH_DIR"
+    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)"
+    PIP_CMD_STR=$(get_pip_cmd)
+    echo "  -> Using installer: $PIP_CMD_STR"
+    for entry in "${DEFAULT_NODES[@]}"; do
+        name="${entry##*|}"
+        node_dir="$APP_DIR/custom_nodes/$name"
+        req_file="$node_dir/requirements.txt"
+        [ -f "$req_file" ] || req_file="$node_dir/requirements-no-cupy.txt"
+        [ -f "$req_file" ] || continue
         filtered_req=$(grep -v -iE "$FILTER_PATTERN" "$req_file" || true)
-        if [ -n "$filtered_req" ]; then
-            echo "$filtered_req" > /tmp/node_requirements.txt
-            pip install --no-cache-dir -r /tmp/node_requirements.txt -c /tmp/constraints.txt || true
+        [ -n "$filtered_req" ] || continue
+        # hash 包含过滤后的 requirements + constraints，避免 torch/numpy 升级后误跳过
+        new_hash=$(printf "%s\n---CONSTRAINTS---\n%s" "$filtered_req" "$(cat /tmp/constraints.txt)" | sha256sum | cut -d' ' -f1)
+        hash_file="$HASH_DIR/${name}.sha256"
+        if [[ "$FORCE_CUSTOM_NODE_REQUIREMENTS" != "1" && -f "$hash_file" && "$(cat "$hash_file")" == "$new_hash" ]]; then
+            echo "  -> Skipping $name (requirements unchanged, hash $new_hash)"
+            continue
         fi
-    fi
-done
+        echo "  -> Installing requirements for: $name"
+        echo "$filtered_req" > /tmp/node_requirements.txt
+        if install_requirements /tmp/node_requirements.txt /tmp/constraints.txt; then
+            echo "$new_hash" > "$hash_file"
+            echo "  -> Installed $name (hash $new_hash)"
+        else
+            echo "  -> Failed to install $name (will retry next start, hash not saved)"
+        fi
+    done
+fi
 
 # 创建与宿主 UID:GID 一致的用户
 echo "Setting up user (UID=$PUID, GID=$PGID)..."
