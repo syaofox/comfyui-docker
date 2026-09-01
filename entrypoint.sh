@@ -69,6 +69,10 @@ DEFAULT_NODES=(
     # "numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
     # "LAOGOU-666/Comfyui-Memory_Cleanup.git|Comfyui-Memory_Cleanup"
     "yolain/ComfyUI-Easy-Use.git|ComfyUI-Easy-Use"
+    "chflame163/ComfyUI_LayerStyle.git|ComfyUI_LayerStyle"
+    "Suzie1/ComfyUI_Comfyroll_CustomNodes.git|ComfyUI_Comfyroll_CustomNodes"
+    "ltdrdata/was-node-suite-comfyui.git|was-node-suite-comfyui"
+    "LAOGOU-666/Comfyui_LG_Tools.git|Comfyui_LG_Tools"
 )
 
 # 创建模型目录
