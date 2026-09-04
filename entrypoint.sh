@@ -44,6 +44,7 @@ DEFAULT_NODES=(
     "syaofox/sfnodes.git|sfnodes"
     "syaofox/ComfyUI-llama-cpp_vlm.git|ComfyUI-llama-cpp_vlm"
     "syaofox/ComfyUI-RMBG.git|ComfyUI-RMBG"
+    "syaofox/ComfyUI-YCNodes_Toolkit.git|ComfyUI-YCNodes_Toolkit"
     # "syaofox/ComfyUI-ReActor.git|ComfyUI-ReActor"
     # 以下是一些社区流行的节点，用户可根据需要选择性克隆
     "1038lab/ComfyUI-QwenVL.git|ComfyUI-QwenVL"
