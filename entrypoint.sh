@@ -101,6 +101,7 @@ DEFAULT_NODES=(
     "Suzie1/ComfyUI_Comfyroll_CustomNodes.git|ComfyUI_Comfyroll_CustomNodes"
     "ltdrdata/was-node-suite-comfyui.git|was-node-suite-comfyui"
     "LAOGOU-666/Comfyui_LG_Tools.git|Comfyui_LG_Tools"
+    "Q0809/ComfyUI-Krea2-Accel.git|ComfyUI-Krea2-Accel"
 )
 
 # 创建模型目录
