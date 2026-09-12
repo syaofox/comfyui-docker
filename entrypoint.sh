@@ -108,7 +108,7 @@ DEFAULT_NODES=(
 echo "Creating model directories..."
 MODEL_DIRECTORIES=(
     checkpoints clip clip_vision configs controlnet
-    diffusers diffusion_models embeddings gligen
+    diffusers diffusion_models embeddings frame_interpolation gligen
     hypernetworks loras photomaker style_models
     text_encoders unet upscale_models vae vae_approx
 )
