@@ -102,6 +102,7 @@ DEFAULT_NODES=(
     "ltdrdata/was-node-suite-comfyui.git|was-node-suite-comfyui"
     "LAOGOU-666/Comfyui_LG_Tools.git|Comfyui_LG_Tools"
     "Q0809/ComfyUI-Krea2-Accel.git|ComfyUI-Krea2-Accel"
+    "daniabib/ComfyUI_ProPainter_Nodes.git|ComfyUI_ProPainter_Nodes"
 )
 
 # 创建模型目录
