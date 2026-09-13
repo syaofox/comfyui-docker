@@ -41,6 +41,7 @@ services:
       - UV_INDEX_URL=${UV_INDEX_URL:-${PIP_MIRROR:-https://pypi.org/simple}}
       - UV_CACHE_DIR=/home/comfy/app/.cache/uv
       - PIP_CACHE_DIR=/home/comfy/app/.cache/pip
+      - COMFYUI_ARGS=${COMFYUI_ARGS:-}
     deploy:
       resources:
         reservations:
@@ -49,4 +50,4 @@ services:
               count: all
               capabilities: [gpu]
     restart: unless-stopped
-    shm_size: 8g
+    shm_size: 4g
