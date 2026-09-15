@@ -105,7 +105,8 @@ DEFAULT_NODES=(
     "daniabib/ComfyUI_ProPainter_Nodes.git|ComfyUI_ProPainter_Nodes"
     # 语义识别遮罩
     "9nate-drake/Comfyui-SecNodes.git|Comfyui-SecNodes"
-    # "nkxx188/ComfyUI-SCAIL2-Easy.git|ComfyUI-SCAIL2-Easy"
+    "nkxx188/ComfyUI-SCAIL2-Easy.git|ComfyUI-SCAIL2-Easy"
+    "WhatDreamsCost/WhatDreamsCost-ComfyUI.git|WhatDreamsCost-ComfyUI"
 )
 
 # 创建模型目录
