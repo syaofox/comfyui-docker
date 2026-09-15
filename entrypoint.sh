@@ -103,6 +103,9 @@ DEFAULT_NODES=(
     "LAOGOU-666/Comfyui_LG_Tools.git|Comfyui_LG_Tools"
     "Q0809/ComfyUI-Krea2-Accel.git|ComfyUI-Krea2-Accel"
     "daniabib/ComfyUI_ProPainter_Nodes.git|ComfyUI_ProPainter_Nodes"
+    # 语义识别遮罩
+    "9nate-drake/Comfyui-SecNodes.git|Comfyui-SecNodes"
+    # "nkxx188/ComfyUI-SCAIL2-Easy.git|ComfyUI-SCAIL2-Easy"
 )
 
 # 创建模型目录
