@@ -55,6 +55,7 @@ docker compose up -d
 ├── entrypoint.sh           # 启动脚本
 ├── .env.example            # 环境变量范例
 ├── wheel/                  # 预编译 wheel（llama_cpp_python / flash_attn）
+├── extra_model_paths.yaml  # 额外模型路径配置（合并第二块硬盘的模型）
 ├── custom_nodes/           # 自定义节点（volume 挂载）
 ├── models/                 # 模型文件（volume 挂载）
 ├── input/                  # 输入文件
@@ -77,8 +78,34 @@ docker compose up -d
 | `MODELSCOPE_CACHE` | ModelScope 缓存目录 | `/home/comfy/app/.cache/modelscope` |
 | `U2NET_HOME` | U2Net 模型目录 | `/home/comfy/app/models/u2net` |
 | `COMFYUI_UPDATE_MODE` | ComfyUI 升级模式：`tag`（最新 Release）或 `latest`（最新提交） | `tag` |
+| `EXTRA_MODELS_PATH` | 第二块硬盘的模型根目录（宿主机绝对路径），只读合并进 ComfyUI | 空（不挂载） |
 
 > **注意**: `docker-compose.yml` 中设置了 `shm_size: 8g`，确保容器内有足够共享内存。
+
+## 挂载第二块硬盘的模型
+
+通过 ComfyUI 原生 `extra_model_paths.yaml` 机制，可在内置 `models/` 之外**合并**另一个目录，
+两块硬盘的模型同时可见（非覆盖）。
+
+1. 在 `.env` 中指定第二块硬盘的模型根目录（**绝对路径**）：
+   ```
+   EXTRA_MODELS_PATH=/home/syaofox/comfymodels
+   ```
+2. 在该目录下按类别建好子目录（否则 ComfyUI 扫不到模型）：
+   ```bash
+   mkdir -p /home/syaofox/comfymodels/{checkpoints,clip,clip_vision,controlnet,diffusion_models,embeddings,loras,text_encoders,unet,upscale_models,vae,gguf}
+   ```
+3. 需要合并哪些类别，在 `extra_model_paths.yaml` 的 `external_disk:` 下增删对应行即可
+   （键名 = 类别名，值 = 相对 `base_path` 的子目录）。
+4. 重新创建容器生效：
+   ```bash
+   docker compose up -d --force-recreate
+   ```
+
+**读写模式**：该挂载在 `docker-compose.yml` 中固定为 `:ro`（只读），防止 ComfyUI 或自定义
+节点误写/误删第二块盘的模型，适合作为“只读模型库”。若需要往该盘下载模型、做 LoRA 训练或
+模型转换，请把 `docker-compose.yml` 对应行的 `:ro` 去掉；同时 `extra_model_paths.yaml` 中
+`is_default: false` 表示下载默认仍写入内置 `models/`，改为 `true` 才会以该盘为默认下载位置。
 
 ## 升级管理
 

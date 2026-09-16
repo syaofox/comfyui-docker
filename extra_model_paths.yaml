@@ -1,0 +1,31 @@
+# ComfyUI 额外模型路径配置
+# 与内置 models/ 目录“合并”（非覆盖），使第二块硬盘的模型同时可见。
+# base_path 为容器内挂载点，由 docker-compose.yml 中 EXTRA_MODELS_PATH 决定。
+# 键名（external_disk）任意，仅作标识；is_default: false 表示下载默认仍写入内置 models/。
+# 自定义节点专属类别（如 sams / RMBG 等）如需一并合并，按同样格式在下方追加即可。
+
+external_disk:
+    base_path: /home/comfy/app/models-ext
+    is_default: false
+    checkpoints: checkpoints
+    clip: clip
+    clip_vision: clip_vision
+    configs: configs
+    controlnet: controlnet
+    diffusers: diffusers
+    diffusion_models: diffusion_models
+    embeddings: embeddings
+    frame_interpolation: frame_interpolation
+    gligen: gligen
+    hypernetworks: hypernetworks
+    loras: loras
+    photomaker: photomaker
+    style_models: style_models
+    text_encoders: text_encoders
+    unet: unet
+    upscale_models: upscale_models
+    vae: vae
+    vae_approx: vae_approx
+    gguf: gguf
+    unet_gguf: unet_gguf
+    clip_gguf: clip_gguf

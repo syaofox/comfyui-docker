@@ -304,9 +304,12 @@ groupadd -g "$PGID" comfy 2>/dev/null || true
 useradd -m -u "$PUID" -g comfy -s /bin/bash comfy 2>/dev/null || true
 
 # 修正目录权限（覆盖整个 home 目录，包括 .cache / .triton 等）
-chown -R "$PUID:$PGID" "$APP_DIR"
+# 跳过只读挂载（额外模型路径 / extra_model_paths.yaml），否则 chown 在只读文件系统上报错
 mkdir -p /home/comfy/.cache /home/comfy/.triton
-chown -R "$PUID:$PGID" /home/comfy
+find /home/comfy \
+    -path "$APP_DIR/models-ext" -prune -o \
+    -path "$APP_DIR/extra_model_paths.yaml" -prune -o \
+    -exec chown "$PUID:$PGID" {} + 2>/dev/null || true
 
 # 检测 ComfyUI 的 database migration 是否与当前代码一致
 # 不一致时（如切换分支/tag 导致 migration 链变化），自动备份旧库并重建

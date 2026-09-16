@@ -19,6 +19,8 @@ services:
       - ./input:/home/comfy/app/input
       - ./custom_nodes:/home/comfy/app/custom_nodes
       - ./models:/home/comfy/app/models
+      - ./extra_model_paths.yaml:/home/comfy/app/extra_model_paths.yaml:ro
+      - ${EXTRA_MODELS_PATH:-./models-ext}:/home/comfy/app/models-ext:ro
       - ./output:/home/comfy/app/output
       - ./user:/home/comfy/app/user
       - ./.cache:/home/comfy/app/.cache
