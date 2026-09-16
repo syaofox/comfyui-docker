@@ -37,6 +37,37 @@ install_requirements() {
     fi
 }
 
+# 生成 constraints 文件，锁定核心包版本（防止传递依赖降级）
+write_constraints() {
+    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+}
+
+# 同步 ComfyUI 本体依赖（hash 守卫：requirements/constraints 变化或缓存缺失才安装）
+# 只有安装成功才写入 hash，升级过程中断/失败时下次启动会自动重试，避免出现半升级环境
+sync_comfy_requirements() {
+    [ -f "$APP_DIR/requirements.txt" ] || return 0
+    mkdir -p "$HASH_DIR"
+    if ! write_constraints; then
+        echo "  -> Failed to build constraints, skipping ComfyUI requirements sync"
+        return 0
+    fi
+    grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt || true
+    local new_hash
+    new_hash=$(printf "%s\n---CONSTRAINTS---\n%s" "$(cat /tmp/filtered_requirements.txt)" "$(cat /tmp/constraints.txt)" | sha256sum | cut -d' ' -f1)
+    local hash_file="$HASH_DIR/comfyui_core.sha256"
+    if [[ "$FORCE_CUSTOM_NODE_REQUIREMENTS" != "1" && -f "$hash_file" && "$(cat "$hash_file")" == "$new_hash" ]]; then
+        echo "  -> ComfyUI requirements unchanged (hash $new_hash), skipping"
+        return 0
+    fi
+    echo "  -> Installing ComfyUI requirements..."
+    if install_requirements /tmp/filtered_requirements.txt /tmp/constraints.txt; then
+        echo "$new_hash" > "$hash_file"
+        echo "  -> ComfyUI requirements installed (hash $new_hash)"
+    else
+        echo "  -> ComfyUI requirements install failed (will retry next start, hash not saved)"
+    fi
+}
+
 # 默认节点列表（URL|目录名）
 DEFAULT_NODES=(
     "Comfy-Org/ComfyUI-Manager.git|ComfyUI-Manager"
@@ -145,14 +176,6 @@ if [ -f "$UPDATE_FLAG" ]; then
                 git -C "$APP_DIR" reset --hard FETCH_HEAD \
                     && echo "  -> ComfyUI upgraded to latest commit" \
                     || echo "  -> ComfyUI upgrade failed, keeping current version"
-                # 重新安装 ComfyUI 的依赖
-                if [ -f "$APP_DIR/requirements.txt" ]; then
-                    echo "  -> Reinstalling ComfyUI requirements..."
-                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
-                    grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
-                        && install_requirements /tmp/filtered_requirements.txt /tmp/constraints.txt \
-                        || echo "  -> ComfyUI requirements install failed"
-                fi
             else
                 echo "  -> ComfyUI already at latest ($CURRENT_SHA), skipping"
             fi
@@ -174,14 +197,6 @@ if [ -f "$UPDATE_FLAG" ]; then
                     && git -C "$APP_DIR" reset --hard "FETCH_HEAD" \
                     && echo "  -> ComfyUI upgraded to $LATEST_TAG" \
                     || echo "  -> ComfyUI upgrade failed, keeping current version"
-                # 重新安装 ComfyUI 的依赖
-                if [ -f "$APP_DIR/requirements.txt" ]; then
-                    echo "  -> Reinstalling ComfyUI requirements..."
-                    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
-                    grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" "$APP_DIR/requirements.txt" > /tmp/filtered_requirements.txt \
-                        && install_requirements /tmp/filtered_requirements.txt /tmp/constraints.txt \
-                        || echo "  -> ComfyUI requirements install failed"
-                fi
             else
                 echo "  -> ComfyUI already at latest ($CURRENT_TAG), skipping"
             fi
@@ -217,6 +232,10 @@ if [ -f "$UPDATE_FLAG" ]; then
     echo "=== Upgrade complete, flag removed ==="
 fi
 
+# 同步 ComfyUI 本体依赖（每次启动执行；hash 不变时秒过，可自愈被打断/失败的升级安装）
+echo "=== Syncing ComfyUI requirements ==="
+sync_comfy_requirements
+
 # 克隆缺失的默认节点（每次启动都检查，确保新增节点被克隆）
 echo "=== Cloning missing custom nodes ==="
 for entry in "${DEFAULT_NODES[@]}"; do
@@ -240,7 +259,7 @@ if [[ "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "1" || "$SKIP_CUSTOM_NODE_REQUIREMENTS
 else
     echo "=== Installing custom node requirements ==="
     mkdir -p "$HASH_DIR"
-    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+    write_constraints
     FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)"
     PIP_CMD_STR=$(get_pip_cmd)
     echo "  -> Using installer: $PIP_CMD_STR"

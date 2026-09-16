@@ -99,6 +99,8 @@ docker restart comfyui-docker
 4. 安装节点的 `requirements.txt` 依赖
 5. 删除 `.update` 文件，下次启动不再重复执行
 
+> **核心依赖自愈**: ComfyUI 本体依赖（`requirements.txt`，过滤 `torch`/`numpy` 等镜像自带包）同样由 hash 守卫管理，且**每次启动都会校验**：hash 变化或缓存缺失时自动补装，只有安装成功才记录 hash。因此升级过程中断（例如容器在安装依赖时被重启）不会留下半升级环境，下次启动会自动重试；依赖无变化时只做一次 hash 比对，几乎无开销。设置 `FORCE_CUSTOM_NODE_REQUIREMENTS=1` 可强制重装本体与节点依赖。
+
 > **数据库自动恢复**: 切换 `COMFYUI_UPDATE_MODE` 或上游 rebase migration 后，可能导致旧 `comfyui.db` 的 migration 记录与当前代码不兼容。entrypoint 会在启动前自动检测，发现不兼容时将旧 DB 备份为 `comfyui.db.migration_error.<时间戳>` 并重建，工作流等数据不保留但不会阻塞启动。
 
 ### 默认节点
