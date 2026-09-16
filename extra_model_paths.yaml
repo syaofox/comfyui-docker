@@ -27,5 +27,7 @@ external_disk:
     vae: vae
     vae_approx: vae_approx
     gguf: gguf
-    unet_gguf: unet_gguf
-    clip_gguf: clip_gguf
+    # 注意：不要在此声明 unet_gguf / clip_gguf。
+    # ComfyUI-GGUF 节点会在启动时把它们注册为 diffusion_models / text_encoders 的别名，
+    # 若 yaml 预先声明会造成键冲突并被覆盖（伴随 "Unknown file list already present" 警告）。
+    # GGUF 模型放到 diffusion_models / text_encoders 目录即可被扫描到。
