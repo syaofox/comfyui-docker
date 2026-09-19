@@ -115,29 +115,32 @@ DEFAULT_NODES=(
     # "zeus-onl/RegioCraft.git|RegioCraft"
     "capitan01R/ComfyUI-Flux2Klein-Enhancer.git|ComfyUI-Flux2Klein-Enhancer"
     "alexw5702-afk/krea2-anypaint.git|krea2-anypaint"
-    "princepainter/ComfyUI-PainterI2V.git|ComfyUI-PainterI2V"
+    # "princepainter/ComfyUI-PainterI2V.git|ComfyUI-PainterI2V"
 
 
     # "darksidewalker/ComfyUI-DaSiWa-Nodes.git|ComfyUI-DaSiWa-Nodes"
     # "1038lab/ComfyUI-JoyCaption.git|ComfyUI-JoyCaption"
     # "Mirumo0u0/ComfyUI-Cosmos-Reference.git|ComfyUI-Cosmos-Reference"
     
-    "cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
+    # "cubiq/ComfyUI_essentials.git|ComfyUI_essentials"
     "filliptm/ComfyUI_Fill-Nodes.git|ComfyUI_Fill-Nodes"
     # "o-l-l-i/ComfyUI-Olm-DragCrop.git|ComfyUI-Olm-DragCrop"
     # "numz/ComfyUI-SeedVR2_VideoUpscaler.git|ComfyUI-SeedVR2_VideoUpscaler"
     # "LAOGOU-666/Comfyui-Memory_Cleanup.git|Comfyui-Memory_Cleanup"
-    "yolain/ComfyUI-Easy-Use.git|ComfyUI-Easy-Use"
+    # "yolain/ComfyUI-Easy-Use.git|ComfyUI-Easy-Use"
     "chflame163/ComfyUI_LayerStyle.git|ComfyUI_LayerStyle"
-    "Suzie1/ComfyUI_Comfyroll_CustomNodes.git|ComfyUI_Comfyroll_CustomNodes"
-    "ltdrdata/was-node-suite-comfyui.git|was-node-suite-comfyui"
-    "LAOGOU-666/Comfyui_LG_Tools.git|Comfyui_LG_Tools"
-    "Q0809/ComfyUI-Krea2-Accel.git|ComfyUI-Krea2-Accel"
+    # "Suzie1/ComfyUI_Comfyroll_CustomNodes.git|ComfyUI_Comfyroll_CustomNodes"
+    # "ltdrdata/was-node-suite-comfyui.git|was-node-suite-comfyui"
+    # "LAOGOU-666/Comfyui_LG_Tools.git|Comfyui_LG_Tools"
+    # "Q0809/ComfyUI-Krea2-Accel.git|ComfyUI-Krea2-Accel"
     "daniabib/ComfyUI_ProPainter_Nodes.git|ComfyUI_ProPainter_Nodes"
     # 语义识别遮罩
     "9nate-drake/Comfyui-SecNodes.git|Comfyui-SecNodes"
-    "nkxx188/ComfyUI-SCAIL2-Easy.git|ComfyUI-SCAIL2-Easy"
+    # "nkxx188/ComfyUI-SCAIL2-Easy.git|ComfyUI-SCAIL2-Easy"
     "WhatDreamsCost/WhatDreamsCost-ComfyUI.git|WhatDreamsCost-ComfyUI"
+    # "TTPlanetPig/comfyui_scail2_multi_cond.git|comfyui_scail2_multi_cond"
+    # "FuouM/ComfyUI-MatAnyone.git|ComfyUI-MatAnyone"
+    "Starnodes2024/comfyui-starnodes-modelconverter.git|comfyui-starnodes-modelconverter"
 )
 
 # 创建模型目录
