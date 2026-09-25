@@ -42,6 +42,7 @@ install_requirements() {
 # transformers 4.x 强制 huggingface-hub<1.0，而 diffusers>=0.40 需要 hub 1.x 的
 # get_cached_repo_tree；一旦被节点依赖降级，ComfyUI-SDPose-OOD 等会 import 失败。
 # 用 importlib.metadata 读版本，缺失的包自动跳过，不阻断 constraints 生成。
+# 与 Dockerfile 的 /usr/local/bin/write_constraints.py 保持同步（构建期用同一套规则）。
 write_constraints() {
     python3 - <<'PY' || return 1
 import importlib.metadata as md
@@ -287,6 +288,7 @@ else
     # 核心托管包：从节点 requirements 中剔除，统一由 constraints 锁定版本
     # （transformers 系被剔除后，AuK_Doc 的 transformers<5 不会再把环境降级到 4.x）
     # 包名后必须是行尾/空白/版本符等非包名字符，避免误伤 transformers_stream_generator 之类的包
+    # 与 Dockerfile 构建期 FILTER_PATTERN 保持同步
     FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime-gpu|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)"
     PIP_CMD_STR=$(get_pip_cmd)
     echo "  -> Using installer: $PIP_CMD_STR"

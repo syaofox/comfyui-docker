@@ -105,8 +105,29 @@ RUN pip install --no-cache-dir /home/comfy/app/wheel/llama_cpp_python-0.3.33+cu1
 RUN pip install --no-cache-dir uv pytest && uv --version
 
 
-# 生成 constraints 文件，锁定核心包版本（防止传递依赖降级）
-RUN python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','a').write(f'{p}=={v}\n') for p,v in pkgs.items()]" && cat /tmp/constraints.txt
+# constraints 生成脚本（锁定核心包版本，防止传递依赖降级）
+# 与 entrypoint.sh 的 write_constraints() 保持同步：包名清单必须一致，
+# 否则重建镜像后运行时会锁到另一套版本
+RUN cat > /usr/local/bin/write_constraints.py <<'PY'
+import importlib.metadata as md
+
+names = [
+    "torch", "torchvision", "torchaudio", "numpy",
+    "cupy-cuda13x", "onnxruntime-gpu",
+    "transformers", "huggingface-hub", "tokenizers",
+]
+lines = []
+for name in names:
+    try:
+        lines.append(f"{name}=={md.version(name).split('+')[0]}")
+    except md.PackageNotFoundError:
+        pass
+with open("/tmp/constraints.txt", "w") as f:
+    f.write("\n".join(lines) + "\n")
+PY
+
+# 首次生成：此时 transformers 系还没装，只锁已存在的包（torch/numpy/cupy/onnxruntime）
+RUN python3 /usr/local/bin/write_constraints.py && cat /tmp/constraints.txt
 
 RUN if [ -f requirements.txt ]; then \
     grep -v -iE "^(torch|torchvision|torchaudio|numpy)[=~><!]" requirements.txt > /tmp/filtered_requirements.txt && \
@@ -129,11 +150,16 @@ RUN pip install --no-cache-dir /home/comfy/app/wheel/spas_sage_attn-0.1.0-cp312-
 # 配置 sudo 免密（entrypoint 中 sudo 切换用户用）
 RUN echo "ALL ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/all
 
+# 预装节点依赖前重新生成 constraints：此时 transformers/huggingface-hub/tokenizers 已就位，
+# 一并锁定，使下面节点 requirements 里的 transformers 行被过滤后无法降级共享环境
+RUN python3 /usr/local/bin/write_constraints.py && cat /tmp/constraints.txt
+
 # Build 阶段从宿主机 custom_nodes 读取 requirements.txt 预装依赖（带 pip/uv 缓存跨构建共享，优先 uv）
+# FILTER_PATTERN 与 entrypoint.sh 保持同步：核心托管包从节点 requirements 中剔除
 RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
     --mount=type=cache,target=/home/comfy/app/.cache/pip \
     --mount=type=cache,target=/home/comfy/app/.cache/uv \
-    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)" && \
+    FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime-gpu|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)" && \
     if command -v uv >/dev/null 2>&1; then PIP_CMD="uv pip install --system"; else PIP_CMD="pip install"; fi && \
     echo "  -> Build installer: $PIP_CMD" && \
     for node_dir in /tmp/host_custom_nodes/*/; do \
