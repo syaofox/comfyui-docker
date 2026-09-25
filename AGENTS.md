@@ -135,6 +135,7 @@ sha256sum <文件>.part
 ## 文档索引（docs/）
 
 - `模型量化与文件校验指南.md`：转换器使用、补丁、量化验证、异常排查、下载校验、流式拆分。
+- `节点依赖冲突与核心包锁定.md`：节点依赖降级导致其他节点 import 失败的排查；constraints / FILTER_PATTERN 核心包锁定机制。
 - `Wan Context Windows用法详解.md`：长视频滑窗节点用法。
 - `lora训练/`：krea2 角色 LoRA 设置、wan2.1 角色 LoRA 训练、ChatGPT 打标。
 

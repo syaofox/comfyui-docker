@@ -38,8 +38,28 @@ install_requirements() {
 }
 
 # 生成 constraints 文件，锁定核心包版本（防止传递依赖降级）
+# 注意：transformers 系（transformers / huggingface-hub / tokenizers）必须一起锁。
+# transformers 4.x 强制 huggingface-hub<1.0，而 diffusers>=0.40 需要 hub 1.x 的
+# get_cached_repo_tree；一旦被节点依赖降级，ComfyUI-SDPose-OOD 等会 import 失败。
+# 用 importlib.metadata 读版本，缺失的包自动跳过，不阻断 constraints 生成。
 write_constraints() {
-    python3 -c "import torch, numpy, cupy, onnxruntime; pkgs={'torch':torch.__version__.split('+')[0],'torchvision':__import__('torchvision').__version__,'torchaudio':__import__('torchaudio').__version__,'numpy':numpy.__version__,'cupy-cuda13x':cupy.__version__,'onnxruntime-gpu':onnxruntime.__version__}; [open('/tmp/constraints.txt','w').write(f'{p}=={v}\n') for p,v in pkgs.items()]"
+    python3 - <<'PY' || return 1
+import importlib.metadata as md
+
+names = [
+    "torch", "torchvision", "torchaudio", "numpy",
+    "cupy-cuda13x", "onnxruntime-gpu",
+    "transformers", "huggingface-hub", "tokenizers",
+]
+lines = []
+for name in names:
+    try:
+        lines.append(f"{name}=={md.version(name).split('+')[0]}")
+    except md.PackageNotFoundError:
+        pass
+with open("/tmp/constraints.txt", "w") as f:
+    f.write("\n".join(lines) + "\n")
+PY
 }
 
 # 同步 ComfyUI 本体依赖（hash 守卫：requirements/constraints 变化或缓存缺失才安装）
@@ -141,6 +161,7 @@ DEFAULT_NODES=(
     # "TTPlanetPig/comfyui_scail2_multi_cond.git|comfyui_scail2_multi_cond"
     # "FuouM/ComfyUI-MatAnyone.git|ComfyUI-MatAnyone"
     "Starnodes2024/comfyui-starnodes-modelconverter.git|comfyui-starnodes-modelconverter"
+    "DocWorkBox/ComfyUI-AuK_Doc.git|ComfyUI-AuK_Doc"
 )
 
 # 创建模型目录
@@ -263,7 +284,10 @@ else
     echo "=== Installing custom node requirements ==="
     mkdir -p "$HASH_DIR"
     write_constraints
-    FILTER_PATTERN="^(torch|torchvision|torchaudio|cupy-cuda|onnxruntime-gpu|llama.cpp.python|llama_cpp_python)([=~><!]|$)"
+    # 核心托管包：从节点 requirements 中剔除，统一由 constraints 锁定版本
+    # （transformers 系被剔除后，AuK_Doc 的 transformers<5 不会再把环境降级到 4.x）
+    # 包名后必须是行尾/空白/版本符等非包名字符，避免误伤 transformers_stream_generator 之类的包
+    FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime-gpu|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)"
     PIP_CMD_STR=$(get_pip_cmd)
     echo "  -> Using installer: $PIP_CMD_STR"
     for entry in "${DEFAULT_NODES[@]}"; do
