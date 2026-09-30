@@ -1,0 +1,13 @@
+--- a/comfy/background_removal/birefnet.py
++++ b/comfy/background_removal/birefnet.py
+@@ -110,7 +110,9 @@
+ 
+         if mask is not None:
+             nW = mask.shape[0]
+-            attn = attn.view(B_ // nW, nW, self.num_heads, N, N) + mask.unsqueeze(1).unsqueeze(0)
++            # 本地补丁：attn 可能为 fp16（manual_cast），mask 默认 fp32，直接相加会把
++            # attn 提升成 fp32，随后 attn @ v 报 "expected scalar type Float but found Half"
++            attn = attn.view(B_ // nW, nW, self.num_heads, N, N) + comfy.ops.cast_to_input(mask, attn).unsqueeze(1).unsqueeze(0)
+             attn = attn.view(-1, self.num_heads, N, N)
+             attn = self.softmax(attn)
+         else:

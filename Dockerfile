@@ -115,6 +115,9 @@ names = [
     "torch", "torchvision", "torchaudio", "numpy",
     "cupy-cuda13x", "onnxruntime-gpu",
     "transformers", "huggingface-hub", "tokenizers",
+    # protobuf：googleapis-common-protos>=6.33.5 需要 6.x+，RMBG 的 <6 是历史遗留
+    # 与 entrypoint.sh 的 write_constraints() 保持同步
+    "protobuf",
 ]
 lines = []
 for name in names:
@@ -159,7 +162,7 @@ RUN python3 /usr/local/bin/write_constraints.py && cat /tmp/constraints.txt
 RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
     --mount=type=cache,target=/home/comfy/app/.cache/pip \
     --mount=type=cache,target=/home/comfy/app/.cache/uv \
-    FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime-gpu|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)" && \
+    FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime(-gpu)?|protobuf|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)" && \
     if command -v uv >/dev/null 2>&1; then PIP_CMD="uv pip install --system"; else PIP_CMD="pip install"; fi && \
     echo "  -> Build installer: $PIP_CMD" && \
     for node_dir in /tmp/host_custom_nodes/*/; do \
@@ -174,7 +177,24 @@ RUN --mount=type=bind,source=./custom_nodes,target=/tmp/host_custom_nodes \
         PIP_NO_CACHE_DIR=0 $PIP_CMD -r /tmp/node_reqs.txt -c /tmp/constraints.txt || true; \
     done
 
+# 确保 onnxruntime-gpu 的文件覆盖任何裸 onnxruntime 安装
+# （两者共用同一个 `onnxruntime` module 名，后装者覆盖文件；节点依赖里的
+#  onnxruntime/onnxruntime-gpu 行已在上面被 FILTER_PATTERN 剔除，
+#  这里再兜底一次传递依赖（如 insightface）引入的 CPU 版）
+RUN pip install --no-cache-dir --upgrade onnxruntime-gpu
+
 COPY entrypoint.sh /entrypoint.sh
+
+# 本地核心补丁：镜像内置一份（/opt/local-patches）并在构建时应用；
+# 运行时 entrypoint 每次启动幂等确认（compose 挂载的 /patches 优先），
+# 因此 ComfyUI 升级/容器重建后补丁会自动补回。只处理顶层 *.patch。
+COPY patches/ /opt/local-patches/
+RUN for patch in /opt/local-patches/*.patch; do \
+      [ -f "$patch" ] || continue; \
+      echo "  -> Applying $patch"; \
+      git -C /home/comfy/app apply "$patch" \
+        || echo "  -> WARNING: $(basename "$patch") 未能应用（上游代码可能已变化），运行时将再次尝试"; \
+    done
 
 EXPOSE 8188
 

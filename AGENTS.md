@@ -25,7 +25,7 @@ comfyui-docker/
 ├── extra_model_paths.yaml  # 第二块盘的模型类别映射（base_path=/home/comfy/app/models-ext）
 ├── wheel/                  # 预编译 wheel（flash_attn / llama_cpp_python / spas_sage_attn）
 ├── scripts/                # 构建辅助脚本（如 build_spas_sage_attn_wheel.sh）
-├── patches/                # 本地补丁存放目录（当前为空；entrypoint 不会自动应用）
+├── patches/                # 本地核心补丁（*.patch；entrypoint 每次启动幂等应用，见文档索引）
 ├── custom_nodes/           # 自定义节点（与容器双向同步的 volume）
 ├── models/                 # 内置模型库（volume；输出/转换默认落在这里）
 ├── input/ output/ user/    # 输入、输出、工作流与用户配置（volume）
@@ -41,12 +41,15 @@ comfyui-docker/
 | `./custom_nodes` | `/home/comfy/app/custom_nodes` | rw |
 | `./input` / `./output` / `./user` / `./.cache` | `/home/comfy/app/{input,output,user,.cache}` | rw |
 | `./entrypoint.sh` | `/entrypoint.sh` | ro |
+| `./patches` | `/patches` | ro |
 | `./extra_model_paths.yaml` | `/home/comfy/app/extra_model_paths.yaml` | ro |
 | `${EXTRA_MODELS_PATH}` | `/home/comfy/app/models-ext` | **ro** |
 
 升级机制：`touch custom_nodes/.update && docker restart comfyui-docker`
 （升 ComfyUI 本体 + 节点 + 依赖；`COMFYUI_UPDATE_MODE=tag|latest`；依赖有 hash 守卫，
 中断可自愈）。节点列表在 `entrypoint.sh` 的 `DEFAULT_NODES`。
+升级/重建后 `patches/*.patch` 由 entrypoint 自动补回（幂等），补丁状态看日志
+`=== Applying local core patches ===` 段。
 
 ## 硬性操作规则
 
@@ -135,6 +138,7 @@ sha256sum <文件>.part
 ## 文档索引（docs/）
 
 - `模型量化与文件校验指南.md`：转换器使用、补丁、量化验证、异常排查、下载校验、流式拆分。
+- `ComfyUI核心补丁与BiRefNet-fp16修复.md`：核心 BiRefNet 背景移除 fp16 报错的根因/补丁/重放方法、patches/ 应用与升级后恢复。
 - `节点依赖冲突与核心包锁定.md`：节点依赖降级导致其他节点 import 失败的排查；constraints / FILTER_PATTERN 核心包锁定机制。
 - `Wan Context Windows用法详解.md`：长视频滑窗节点用法。
 - `lora训练/`：krea2 角色 LoRA 设置、wan2.1 角色 LoRA 训练、ChatGPT 打标。

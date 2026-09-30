@@ -16,6 +16,7 @@ services:
       - "8188:8188"
     volumes:
       - ./entrypoint.sh:/entrypoint.sh:ro
+      - ./patches:/patches:ro
       - ./input:/home/comfy/app/input
       - ./custom_nodes:/home/comfy/app/custom_nodes
       - ./models:/home/comfy/app/models

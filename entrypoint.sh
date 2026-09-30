@@ -51,6 +51,9 @@ names = [
     "torch", "torchvision", "torchaudio", "numpy",
     "cupy-cuda13x", "onnxruntime-gpu",
     "transformers", "huggingface-hub", "tokenizers",
+    # protobuf：googleapis-common-protos>=6.33.5 需要 6.x+，RMBG 的 <6 是历史遗留
+    # 与 Dockerfile 的 /usr/local/bin/write_constraints.py 保持同步
+    "protobuf",
 ]
 lines = []
 for name in names:
@@ -258,6 +261,32 @@ if [ -f "$UPDATE_FLAG" ]; then
     echo "=== Upgrade complete, flag removed ==="
 fi
 
+# 应用本地核心补丁（幂等）：ComfyUI 在镜像层，升级/重建都会清掉补丁，这里每次启动自动补回
+# 补丁来源：/patches（compose 挂载）优先，其次镜像内置 /opt/local-patches
+# 已应用（reverse-check 通过）→ 跳过；上下文不匹配（上游已改动/已修复）→ 告警但不阻断启动
+echo "=== Applying local core patches ==="
+PATCH_DIR="/patches"
+[ -d "$PATCH_DIR" ] || PATCH_DIR="/opt/local-patches"
+if [ -d "$PATCH_DIR" ]; then
+    for patch in "$PATCH_DIR"/*.patch; do
+        [ -f "$patch" ] || continue
+        patch_name=$(basename "$patch")
+        if git -C "$APP_DIR" apply --reverse --check "$patch" 2>/dev/null; then
+            echo "  -> $patch_name: already applied, skipping"
+        elif git -C "$APP_DIR" apply --check "$patch" 2>/dev/null; then
+            if git -C "$APP_DIR" apply "$patch" 2>/dev/null; then
+                echo "  -> $patch_name: applied"
+            else
+                echo "  -> $patch_name: WARNING apply failed, continuing"
+            fi
+        else
+            echo "  -> $patch_name: WARNING cannot apply (代码已变化，可能上游已修复；请人工确认)"
+        fi
+    done
+else
+    echo "  -> No patch directory found, skipping"
+fi
+
 # 同步 ComfyUI 本体依赖（每次启动执行；hash 不变时秒过，可自愈被打断/失败的升级安装）
 echo "=== Syncing ComfyUI requirements ==="
 sync_comfy_requirements
@@ -290,7 +319,11 @@ else
     # （transformers 系被剔除后，AuK_Doc 的 transformers<5 不会再把环境降级到 4.x）
     # 包名后必须是行尾/空白/版本符等非包名字符，避免误伤 transformers_stream_generator 之类的包
     # 与 Dockerfile 构建期 FILTER_PATTERN 保持同步
-    FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime-gpu|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)"
+    # onnxruntime(-gpu): 节点里的裸 onnxruntime 与 onnxruntime-gpu 都剔除，
+    # 统一由 constraints 锁定的 onnxruntime-gpu 提供模块，避免 CPU 版覆盖 GPU 版 .so
+    # protobuf: 节点里的 protobuf pin（如 RMBG 的 <6）剔除，避免降级打挂
+    # googleapis-common-protos（Fill-Nodes 的 google-cloud-storage 依赖）
+    FILTER_PATTERN="^[[:space:]]*(torch|torchvision|torchaudio|transformers|tokenizers|huggingface[-_]hub|cupy-cuda[0-9]*|onnxruntime(-gpu)?|protobuf|llama[._]cpp[._]python)([^A-Za-z0-9_.-]|$)"
     PIP_CMD_STR=$(get_pip_cmd)
     echo "  -> Using installer: $PIP_CMD_STR"
     for entry in "${DEFAULT_NODES[@]}"; do
@@ -317,6 +350,13 @@ else
             echo "  -> Failed to install $name (will retry next start, hash not saved)"
         fi
     done
+fi
+
+# onnxruntime 健康检查：GPU 版与 CPU 版共用 module 名，后装者覆盖文件。
+# 传递依赖（如 insightface）可能又装回 CPU 版，导致 CUDA EP 消失（推理退 CPU）。
+if ! python3 -c "import onnxruntime as o, sys; sys.exit(0 if 'CUDAExecutionProvider' in o.get_available_providers() else 1)" 2>/dev/null; then
+    echo "  -> WARNING: onnxruntime 缺少 CUDAExecutionProvider（可能被 CPU 版覆盖）"
+    echo "     修复：docker exec -i comfyui-docker uv pip install --system onnxruntime-gpu"
 fi
 
 # 创建与宿主 UID:GID 一致的用户
