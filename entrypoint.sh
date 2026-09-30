@@ -162,7 +162,8 @@ DEFAULT_NODES=(
     # "TTPlanetPig/comfyui_scail2_multi_cond.git|comfyui_scail2_multi_cond"
     # "FuouM/ComfyUI-MatAnyone.git|ComfyUI-MatAnyone"
     "Starnodes2024/comfyui-starnodes-modelconverter.git|comfyui-starnodes-modelconverter"
-    "DocWorkBox/ComfyUI-AuK_Doc.git|ComfyUI-AuK_Doc"
+    # "DocWorkBox/ComfyUI-AuK_Doc.git|ComfyUI-AuK_Doc"
+    "T8mars/Comfyui-Qwen-Image-2.1-MultiAngle-T8.git|Comfyui-Qwen-Image-2.1-MultiAngle-T8"
 )
 
 # 创建模型目录
