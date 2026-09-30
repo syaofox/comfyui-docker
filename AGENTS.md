@@ -25,7 +25,7 @@ comfyui-docker/
 ├── extra_model_paths.yaml  # 第二块盘的模型类别映射（base_path=/home/comfy/app/models-ext）
 ├── wheel/                  # 预编译 wheel（flash_attn / llama_cpp_python / spas_sage_attn）
 ├── scripts/                # 构建辅助脚本（如 build_spas_sage_attn_wheel.sh）
-├── patches/                # 本地核心补丁（*.patch；entrypoint 每次启动幂等应用，见文档索引）
+├── patches/                # 本地补丁（核心 ComfyUI + custom_nodes 节点补丁；entrypoint 每次启动幂等应用）
 ├── custom_nodes/           # 自定义节点（与容器双向同步的 volume）
 ├── models/                 # 内置模型库（volume；输出/转换默认落在这里）
 ├── input/ output/ user/    # 输入、输出、工作流与用户配置（volume）
@@ -139,6 +139,7 @@ sha256sum <文件>.part
 
 - `模型量化与文件校验指南.md`：转换器使用、补丁、量化验证、异常排查、下载校验、流式拆分。
 - `ComfyUI核心补丁与BiRefNet-fp16修复.md`：核心 BiRefNet 背景移除 fp16 报错的根因/补丁/重放方法、patches/ 应用与升级后恢复。
+- `AnyAngle-Studio-fp16精度与资产名不一致修复.md`：AnyAngle Studio「参考图与重建主体不一致」根因（--fp16-intermediates + 截断量化）、节点补丁与诊断方法。
 - `节点依赖冲突与核心包锁定.md`：节点依赖降级导致其他节点 import 失败的排查；constraints / FILTER_PATTERN 核心包锁定机制。
 - `Wan Context Windows用法详解.md`：长视频滑窗节点用法。
 - `lora训练/`：krea2 角色 LoRA 设置、wan2.1 角色 LoRA 训练、ChatGPT 打标。
