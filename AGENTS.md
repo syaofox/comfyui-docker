@@ -20,7 +20,7 @@
 comfyui-docker/
 ├── Dockerfile              # 镜像构建（pytorch cu130 底包 + wheel/ 预编译加速包）
 ├── docker-compose.yml      # 挂载/环境变量/GPU 预留；shm_size: 4g
-├── entrypoint.sh           # 启动脚本：建目录、DEFAULT_NODES 安装/更新、依赖 hash 守卫
+├── entrypoint.sh           # 启动脚本：建目录、DEFAULT_NODES 安装/更新/清理、依赖 hash 守卫
 ├── .env / .env.example     # 用户环境变量（PUID、镜像加速、COMFYUI_ARGS 等）
 ├── extra_model_paths.yaml  # 第二块盘的模型类别映射（base_path=/home/comfy/app/models-ext）
 ├── wheel/                  # 预编译 wheel（flash_attn / llama_cpp_python / spas_sage_attn）
@@ -50,6 +50,12 @@ comfyui-docker/
 中断可自愈）。节点列表在 `entrypoint.sh` 的 `DEFAULT_NODES`。
 升级/重建后 `patches/*.patch` 由 entrypoint 自动补回（幂等），补丁状态看日志
 `=== Applying local core patches ===` 段。
+
+节点清单同步（每次启动执行，无需 `.update`）：从 `DEFAULT_NODES` 移除的节点会被
+软删除（改名 `<目录名>.disabled`，ComfyUI 原生跳过），重新加回列表重启即自动恢复；
+`PRUNE_CUSTOM_NODES=disabled|delete|off` 控制策略（默认 disabled）。只处理台账
+`custom_nodes/.managed_nodes` 中记录过的节点（entrypoint 克隆/收养），手工安装的
+节点绝对安全；手工删台账行=解除托管。清理记录见 `custom_nodes/.pruned.log`。
 
 ## 硬性操作规则
 
@@ -134,6 +140,7 @@ sha256sum <文件>.part
 - 模型：safetensors header 解析（键/形状/dtype/`_quantization_metadata`）、
   `comfy_kitchen` 逐层反量化对比、ComfyUI 实际加载/出图。
 - 工作流改动：用 API `POST /prompt` 提交并轮询 `/history`，出图人工确认。
+- 节点托管/清理：`bash scripts/test_managed_nodes.sh`（宿主本地单测，提取 entrypoint.sh 真实函数）。
 
 ## 文档索引（docs/）
 
@@ -141,6 +148,7 @@ sha256sum <文件>.part
 - `ComfyUI核心补丁与BiRefNet-fp16修复.md`：核心 BiRefNet 背景移除 fp16 报错的根因/补丁/重放方法、patches/ 应用与升级后恢复。
 - `AnyAngle-Studio-fp16精度与资产名不一致修复.md`：AnyAngle Studio「参考图与重建主体不一致」根因（--fp16-intermediates + 截断量化）、节点补丁与诊断方法。
 - `节点依赖冲突与核心包锁定.md`：节点依赖降级导致其他节点 import 失败的排查；constraints / FILTER_PATTERN 核心包锁定机制。
+- `自定义节点清理与托管台账.md`：DEFAULT_NODES 移除节点后的磁盘同步（`.disabled` 软删除/恢复/delete/off）、托管台账机制、`held` 状态、验证方法。
 - `Wan Context Windows用法详解.md`：长视频滑窗节点用法。
 - `lora训练/`：krea2 角色 LoRA 设置、wan2.1 角色 LoRA 训练、ChatGPT 打标。
 

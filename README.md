@@ -156,6 +156,22 @@ docker restart comfyui-docker
 
 `torch` `torchvision` `torchaudio` `cupy-cuda*` `onnxruntime-gpu` `llama_cpp_python`
 
+### 移除节点
+
+注释/删除 `DEFAULT_NODES` 中的一行后重启容器（无需 `touch .update`），entrypoint 会在启动时同步磁盘：
+
+- **默认软删除**：目录改名为 `<目录名>.disabled`。这是 ComfyUI 原生跳过约定，节点不再加载、不丢数据；把该行加回列表重启即可自动恢复（不重新下载，节点自己下载的模型/缓存都还在）。
+- `PRUNE_CUSTOM_NODES=delete`：直接删除目录。重新启用时会重新克隆，节点自己下载的模型/缓存会丢失，适合确定不再使用时回收空间。
+- `PRUNE_CUSTOM_NODES=off`：只更新台账，不处理磁盘。
+
+> 修改 `.env` 里的 `PRUNE_CUSTOM_NODES` 后，需要 `docker compose up -d --force-recreate` 才生效（环境变量在容器创建时注入，`docker restart` 不会重新读取 `.env`）。
+
+> **只动 entrypoint 克隆/收养过的节点**：托管关系记录在 `custom_nodes/.managed_nodes`（`name|repo|state` 台账），手工安装或 ComfyUI-Manager 安装的节点永远不会被自动清理；手工删掉台账某一行即可单独解除托管（也可手工加行纳管）。首次运行会自动“收养”`DEFAULT_NODES` 中已存在且 git origin 匹配的目录——已经被注释掉、从未入台账的历史节点（如 `RegioCraft`）需要处理一次：临时取消注释启动一次完成收养，再注释掉启动即自动软删除。
+>
+> 其它行为：用 ComfyUI-Manager 手工禁用的节点会被尊重（不会自动启用或重新克隆）；清理动作记录在 `custom_nodes/.pruned.log`；被移除节点安装过的 pip 依赖**不会**卸载（依赖可能被其它节点共用，无法安全回收）。
+
+实现细节、验证方法与已知边界见 `docs/自定义节点清理与托管台账.md`。
+
 ## 镜像内预装 GPU 包
 
 | 包 | 说明 |

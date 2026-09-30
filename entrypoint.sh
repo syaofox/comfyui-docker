@@ -9,6 +9,14 @@ COMFYUI_UPDATE_MODE="${COMFYUI_UPDATE_MODE:-tag}"
 SKIP_CUSTOM_NODE_REQUIREMENTS="${SKIP_CUSTOM_NODE_REQUIREMENTS:-0}"
 FORCE_CUSTOM_NODE_REQUIREMENTS="${FORCE_CUSTOM_NODE_REQUIREMENTS:-0}"
 HASH_DIR="/tmp/node_requirements_hashes"
+# 从 DEFAULT_NODES 移除节点时的磁盘同步策略：
+#   disabled（默认）= 目录改名为 <目录名>.disabled（ComfyUI 原生跳过该后缀），可逆、不丢节点数据
+#   delete          = 直接删除目录（重新启用时会重新克隆，节点自己下载的模型/缓存会丢失）
+#   off             = 只维护托管台账，不处理磁盘
+PRUNE_CUSTOM_NODES="${PRUNE_CUSTOM_NODES:-disabled}"
+# 托管台账：记录 entrypoint 克隆/收养过的节点；不在此台账中的目录（手工安装）一律不动
+NODE_MANIFEST="$APP_DIR/custom_nodes/.managed_nodes"
+NODE_PRUNE_LOG="$APP_DIR/custom_nodes/.pruned.log"
 
 # GitHub URL 前缀（为空则直连，非空则走代理）
 GH="${GH_PROXY:+${GH_PROXY}/}https://github.com/"
@@ -91,6 +99,146 @@ sync_comfy_requirements() {
         echo "  -> ComfyUI requirements install failed (will retry next start, hash not saved)"
     fi
 }
+
+# >>> managed-nodes-helpers: 托管台账与节点清理逻辑（begin）
+# 只有 entrypoint 克隆/收养过（记录在 $NODE_MANIFEST）的节点才会被自动清理；
+# 手工安装或在 ComfyUI-Manager 里安装的节点永远不受影响。
+# 本地测试脚本按这两个标记提取函数，标记勿删。
+
+# 读取台账中某节点的记录（输出 name|repo|state 中的 state；无记录输出空）
+manifest_state() {
+    local name="$1"
+    [ -f "$NODE_MANIFEST" ] || return 0
+    awk -F'|' -v n="$name" '$1 == n {print $3; exit}' "$NODE_MANIFEST" 2>/dev/null || true
+}
+
+# 判断目录的 git origin 是否与 DEFAULT_NODES 里的 repo 匹配
+# 兼容 GH_PROXY 前缀（<proxy>/https://github.com/owner/repo.git）与 ssh 形式
+node_origin_matches() {
+    local dir="$1" repo="$2" origin norm
+    [ -d "$dir/.git" ] || return 1
+    origin=$(git -C "$dir" remote get-url origin 2>/dev/null) || return 1
+    [ -n "$origin" ] || return 1
+    norm="${origin/git@github.com:/https://github.com/}"
+    if [ -n "$GH" ]; then
+        norm="${norm#"${GH%/}/"}"
+    fi
+    [ "$norm" = "$repo" ] || [[ "$norm" == *"/${repo}" ]]
+}
+
+# 处理“已从 DEFAULT_NODES 移除”的托管节点，并重写托管台账（每次启动调用）
+# 依赖全局：DEFAULT_NODES / APP_DIR / GH / HASH_DIR / PRUNE_CUSTOM_NODES
+#            NODE_MANIFEST / NODE_PRUNE_LOG
+sync_custom_nodes() {
+    local -A desired_set=() new_state=() new_repo=() handled=()
+    local entry repo name state node_dir disabled_dir
+
+    for entry in "${DEFAULT_NODES[@]}"; do
+        name="${entry##*|}"
+        desired_set["$name"]=1
+    done
+
+    case "$PRUNE_CUSTOM_NODES" in
+        delete|off|disabled) ;;
+        *) echo "  -> WARNING: 未知的 PRUNE_CUSTOM_NODES='$PRUNE_CUSTOM_NODES'，按 disabled 处理"
+           PRUNE_CUSTOM_NODES="disabled" ;;
+    esac
+
+    # 1) 从 DEFAULT_NODES 移除的托管节点 → 软删除（改名 .disabled）/ 删除
+    if [ -f "$NODE_MANIFEST" ] && [ "$PRUNE_CUSTOM_NODES" != "off" ]; then
+        while IFS='|' read -r name repo state; do
+            [ -n "$name" ] || continue
+            case "$name" in \#*) continue ;; esac
+            [ -n "${desired_set[$name]:-}" ] && continue
+            node_dir="$APP_DIR/custom_nodes/$name"
+            disabled_dir="$node_dir.disabled"
+            if [ -d "$node_dir" ]; then
+                if [ "$PRUNE_CUSTOM_NODES" = "delete" ]; then
+                    rm -rf "$node_dir"
+                    echo "  -> Deleted: $name (已从 DEFAULT_NODES 移除)"
+                    printf '%s delete %s\n' "$(date '+%F %T')" "$name" >> "$NODE_PRUNE_LOG"
+                elif [ -d "$disabled_dir" ]; then
+                    echo "  -> WARNING: $name 与 $name.disabled 同时存在，请手工处理"
+                else
+                    mv "$node_dir" "$disabled_dir"
+                    handled["$name"]="disabled"
+                    echo "  -> Disabled: $name （已改名 $name.disabled，重新加回列表并重启即可恢复）"
+                    printf '%s disable %s\n' "$(date '+%F %T')" "$name" >> "$NODE_PRUNE_LOG"
+                fi
+                rm -f "$HASH_DIR/${name}.sha256"
+            elif [ -d "$disabled_dir" ]; then
+                if [ "$PRUNE_CUSTOM_NODES" = "delete" ]; then
+                    rm -rf "$disabled_dir"
+                    echo "  -> Deleted: $name.disabled (残留的软删除目录)"
+                    printf '%s delete-disabled %s\n' "$(date '+%F %T')" "$name" >> "$NODE_PRUNE_LOG"
+                else
+                    echo "  -> Already disabled: $name"
+                fi
+            else
+                echo "  -> Not on disk, dropping record: $name"
+            fi
+        done < "$NODE_MANIFEST"
+    fi
+
+    # 2) 重写台账：DEFAULT_NODES 中磁盘上存在的节点（首次运行自动“收养”）+ 仍在磁盘上的旧记录
+    for entry in "${DEFAULT_NODES[@]}"; do
+        repo="${entry%%|*}"
+        name="${entry##*|}"
+        node_dir="$APP_DIR/custom_nodes/$name"
+        if [ -d "$node_dir" ]; then
+            if [ -z "$(manifest_state "$name")" ] && ! node_origin_matches "$node_dir" "$repo"; then
+                echo "  -> WARNING: $name 目录存在但 git origin 与 '$repo' 不匹配，不纳入托管（不会被自动清理）"
+                continue
+            fi
+            new_state["$name"]="active"
+            new_repo["$name"]="$repo"
+        elif [ -d "$node_dir.disabled" ]; then
+            # .disabled 但台账未记录为 entrypoint 软删除 → 视为手工禁用（held），不自动恢复
+            if [ "$(manifest_state "$name")" = "disabled" ]; then
+                new_state["$name"]="disabled"
+            else
+                new_state["$name"]="held"
+            fi
+            new_repo["$name"]="$repo"
+        fi
+    done
+    if [ -f "$NODE_MANIFEST" ]; then
+        while IFS='|' read -r name repo state; do
+            [ -n "$name" ] || continue
+            case "$name" in \#*) continue ;; esac
+            [ -n "${desired_set[$name]:-}" ] && continue
+            node_dir="$APP_DIR/custom_nodes/$name"
+            if [ -n "${handled[$name]:-}" ]; then
+                new_state["$name"]="${handled[$name]}"
+                new_repo["$name"]="$repo"
+            elif [ -d "$node_dir" ]; then
+                new_state["$name"]="${state:-active}"
+                new_repo["$name"]="$repo"
+            elif [ -d "$node_dir.disabled" ]; then
+                # 保留 entrypoint 软删除记录（可恢复）；手工禁用只记 held
+                if [ "$state" = "disabled" ]; then
+                    new_state["$name"]="disabled"
+                else
+                    new_state["$name"]="held"
+                fi
+                new_repo["$name"]="$repo"
+            fi
+        done < "$NODE_MANIFEST"
+    fi
+
+    {
+        echo "# ComfyUI docker 托管节点台账（entrypoint.sh 自动维护；手工删掉某行 = 解除托管，该目录不再被自动清理）"
+        echo "# name|repo|state  state: active=已启用 / disabled=entrypoint 软删除（可自动恢复）/ held=手工禁用（不自动恢复）"
+        if [ "${#new_state[@]}" -gt 0 ]; then
+            for name in $(printf '%s\n' "${!new_state[@]}" | sort); do
+                printf '%s|%s|%s\n' "$name" "${new_repo[$name]}" "${new_state[$name]}"
+            done
+        fi
+    } > "$NODE_MANIFEST.tmp"
+    mv "$NODE_MANIFEST.tmp" "$NODE_MANIFEST"
+    echo "  -> Manifest updated: $NODE_MANIFEST (${#new_state[@]} managed nodes)"
+}
+# <<< managed-nodes-helpers: 托管台账与节点清理逻辑（end）
 
 # 默认节点列表（URL|目录名）
 DEFAULT_NODES=(
@@ -291,12 +439,22 @@ fi
 echo "=== Syncing ComfyUI requirements ==="
 sync_comfy_requirements
 
-# 克隆缺失的默认节点（每次启动都检查，确保新增节点被克隆）
+# 克隆缺失的默认节点；恢复本脚本软删除（.disabled）的节点
+# （每次启动都检查，确保新增节点被克隆、被注释后又取消注释的节点被找回）
 echo "=== Cloning missing custom nodes ==="
 for entry in "${DEFAULT_NODES[@]}"; do
     repo="${entry%%|*}"
     name="${entry##*|}"
     node_dir="$APP_DIR/custom_nodes/$name"
+    if [ ! -d "$node_dir" ] && [ -d "$node_dir.disabled" ]; then
+        if [ "$(manifest_state "$name")" = "disabled" ]; then
+            mv "$node_dir.disabled" "$node_dir"
+            echo "  -> Restored: $name (从 $name.disabled 恢复，未重新下载)"
+        else
+            echo "  -> Skipping $name: 检测到手工禁用的 $name.disabled（如需启用请手工改名回来）"
+            continue
+        fi
+    fi
     if [ ! -d "$node_dir" ]; then
         echo "  -> Cloning: $name"
         case "$repo" in
@@ -307,6 +465,11 @@ for entry in "${DEFAULT_NODES[@]}"; do
             || echo "  -> Failed to clone $name, skipping"
     fi
 done
+
+# 同步托管台账：从 DEFAULT_NODES 移除的节点 → 软删除（.disabled）/ 删除
+# 首次运行会“收养” DEFAULT_NODES 中已存在且 origin 匹配的目录；手工目录不受影响
+echo "=== Syncing managed custom nodes ==="
+sync_custom_nodes
 
 # 安装节点的 pip 依赖（hash 守卫 + uv pip，/tmp 方案：重启跳过，更新或变更才重装）
 if [[ "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "1" || "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "true" || "$SKIP_CUSTOM_NODE_REQUIREMENTS" == "yes" ]]; then
